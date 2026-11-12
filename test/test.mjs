@@ -154,6 +154,14 @@ t('a "covers 100%" claim is checked against the loans', () => {
   assert.ok(!flagsFor(none, analyze(none)).some((x) => /counts the loans/.test(x.detail)), 'no loans, nothing to call out');
 });
 
+t('a letter that gives only the total cost of attendance uses it as the cost', () => {
+  const l = parseLetter('Oak College\nEstimated Cost of Attendance: $55,000\nFederal Pell Grant $5,000\nOak Grant $20,000');
+  const r = analyze(l);
+  near(r.coa, 55000);
+  near(r.netPrice, 30000);
+  assert.ok(!flagsFor(l, r).some((f) => /No costs|Only billed/.test(f.title)));
+});
+
 t('a letter with aid but no costs gets one clear flag, and unread lines are listed', () => {
   const l = parseLetter('Spruce College\nPell Grant $4,000\nDirect Unsubsidized Loan $2,000\nSmith Fund 1,500');
   const f = flagsFor(l, analyze(l));

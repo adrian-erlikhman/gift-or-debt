@@ -233,6 +233,13 @@ export function parseLetter(text, fallbackName = 'School') {
     }
   }
 
+  // Many letters give only the total cost of attendance, with no breakdown.
+  // Then that total is the year's cost, or there is nothing to subtract aid from.
+  if (!lines.some((l) => l.category === 'cost')) {
+    const coa = lines.find((l) => l.total && /cost of attendance|\bCOA\b|student budget|estimated cost\b/i.test(l.label));
+    if (coa) Object.assign(coa, { category: 'cost', direct: false, total: false, how: 'the letter gives only the total cost of attendance' });
+  }
+
   // Renewal language often sits in a footnote, not on the award's own line.
   const sentences = String(text).split(/(?<=[.!?])\s+|\n/);
   const conditions = sentences.map((s) => s.trim()).filter((s) => RENEW_GPA.test(s) || RENEW_BAD.test(s));

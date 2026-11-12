@@ -33,7 +33,7 @@ export function flagsFor(letter, r) {
   if (r.work > 0) add('info', 'Work-study is a job, not a discount', `${usd(r.work)} is paid as paychecks for hours worked during the year, if you find a work-study job. It can't pay the first bill.`, lines.filter((l) => l.category === 'work').map((l) => l.id));
 
   if (r.counts.cost === 0) add('warn', 'No costs listed', 'The letter lists aid but no costs, so there is nothing to subtract it from. Add the cost of attendance from the school\'s website under Every line.');
-  else if (r.indirect === 0) add('warn', 'Only billed costs are listed', 'The letter shows tuition, fees or housing but no books, transportation or personal costs. Those are real and land on you. Add the school\'s published figures under Every line to see the full year.');
+  else if (r.indirect === 0 && !lines.some((l) => l.category === 'cost' && /cost of attendance|\bCOA\b/i.test(l.label))) add('warn', 'Only billed costs are listed', 'The letter shows tuition, fees or housing but no books, transportation or personal costs. Those are real and land on you. Add the school\'s published figures under Every line to see the full year.');
 
   const firstYear = lines.filter((l) => l.category === 'gift' && l.firstYearOnly);
   if (firstYear.length) add('warn', 'Some aid is first-year only', `${firstYear.map((l) => l.label).join(', ')} won't come back after year one. The 4-year totals already drop it.`, firstYear.map((l) => l.id));
