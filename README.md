@@ -12,11 +12,11 @@ A typical offer lists grants, scholarships, federal loans, a Parent PLUS loan an
 
 ## What it does
 
-- **Reads the letter.** Paste text, or drop in a PDF. Rules find every dollar amount and what it is: cost (billed or not), gift aid, a loan (subsidized, unsubsidized, Parent PLUS, private) or work-study. Totals are set aside and checked against the lines. Fall/spring/total columns and "per semester" amounts become a year. Each line keeps the text it came from, and you can change any category or amount.
+- **Reads the letter.** Paste text, or drop in a PDF. Rules find every dollar amount and what it is: cost (billed or not), gift aid, a loan (subsidized, unsubsidized, Parent PLUS, private) or work-study. Totals and subtotals are set aside and checked against the lines. Fall/spring (or quarter) columns, with or without a total column, and "per semester" amounts become a year. What the family is expected to pay, unmet need and payment plans are not counted as aid. Each line keeps the text it came from; you can change any category or amount, and add a line the letter left out, such as books or the cost of attendance.
 - **Splits the offer.** One bar: gift aid, student loans, Parent PLUS, work-study, and what's still not covered.
 - **Does four years.** Net price is cost of attendance minus gift aid. Costs grow by an assumed rate you can change. First-year-only awards drop off after year one. Borrowing repeats. Interest builds on unsubsidized, private and Parent PLUS loans while you're in school. Debt at graduation and the 10-year monthly payment follow.
-- **Flags the tricks.** Loans counted as aid; a Parent PLUS loan closing the gap (and above the $20,000 yearly cap for new loans from July 2026); private loans; federal loans above the first-year limit; missing books, transportation and personal costs; first-year-only awards; GPA renewal conditions; totals that don't match their lines; work-study counted like a discount; a gap still left to pay.
-- **Compares offers.** Ranked by four-year true cost: net price plus loan fees plus in-school interest.
+- **Flags the tricks.** Loans counted as aid, including a "covers 100%" claim that only adds up with the loans; a Parent PLUS loan closing the gap (and above the $20,000 yearly cap for new loans from July 2026); private loans; federal loans above the first-year limit; missing books, transportation and personal costs; first-year-only awards; GPA renewal conditions; totals that don't match their lines; work-study counted like a discount; a gap still left to pay; lines the reader couldn't place.
+- **Compares offers.** Ranked by four-year true cost: net price plus loan fees plus in-school interest. Two offers from the same school, such as a first offer and a revised one, stay separate.
 - **Drafts the email.** Polite, specific questions for the aid office, built from what this letter actually does.
 
 ## Where Claude fits
@@ -64,7 +64,7 @@ test/test.mjs     parser, math, flags, Claude-output checks
 
 ## Limits
 
-- The rules reader handles the layouts in `js/samples.js` and ones like them. Unusual letters may need a category fixed by hand, or Claude.
+- The rules reader handles the layouts in `js/samples.js` and `test/test.mjs` (term columns, subtotals, a College Financing Plan-style list, letters that give only the total cost) and ones like them. Unusual letters may need a category fixed or a line added by hand, or Claude.
 - Four-year figures assume the same aid and borrowing each year, flat gift aid in dollars and a constant cost increase. Real offers change with each year's FAFSA.
 - Interest during school is simple interest from disbursement to the end of the grace period; it ignores payments made in school.
 - The private-loan rate is a placeholder. Use your lender's.
