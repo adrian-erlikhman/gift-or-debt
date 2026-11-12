@@ -188,6 +188,8 @@ t('compare ranks by four-year true cost', () => {
   assert.equal(c[0].moreThanBest, 0);
   for (let i = 1; i < c.length; i++) assert.ok(c[i].score >= c[i - 1].score);
   assert.equal(c[0].score, Math.round(trueCost(rs.find((r) => r.school === c[0].school)) * 100) / 100);
+  const same = compare(['Tuition $30,000\nGrant $10,000', 'Tuition $30,000\nGrant $20,000'].map((t) => analyze(parseLetter(t, 'Same'))));
+  assert.deepEqual(same.map((x) => x.i), [1, 0], 'a revised offer from the same school keeps its own row');
 });
 
 t('Claude output is only kept when its amount is in the letter', () => {

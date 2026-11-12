@@ -125,9 +125,11 @@ export function trueCost(r) {
   return r.fourYear.net + r.debt.interestInSchool + r.fourYear.fees;
 }
 
+// Each entry keeps `i`, its position in `results`, so two offers from the same
+// school (a first offer and a revised one) stay apart.
 export function compare(results) {
   const score = trueCost;
-  const ranked = [...results].sort((a, b) => score(a) - score(b));
-  const best = ranked[0];
-  return ranked.map((r) => ({ school: r.school, score: r2(score(r)), moreThanBest: r2(score(r) - score(best)) }));
+  const ranked = results.map((r, i) => ({ r, i })).sort((a, b) => score(a.r) - score(b.r));
+  const best = ranked[0].r;
+  return ranked.map(({ r, i }) => ({ i, school: r.school, score: r2(score(r)), moreThanBest: r2(score(r) - score(best)) }));
 }

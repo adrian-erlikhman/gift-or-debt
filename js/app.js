@@ -228,10 +228,11 @@ const HERO = (() => {
 
 // ---------- offer list ----------
 function renderList() {
+  const names = displayNames();
   $('#letterList').innerHTML = state.letters
     .map((l, i) => {
       const r = resultFor(l);
-      return `<li><button data-i="${i}" aria-current="${state.current === i}"><span class="o-name">${esc(l.school)}</span><span class="o-sub">${usd(r.netPrice)} net · ${usd(r.loans)} loans</span><span class="o-bar" aria-hidden="true">${miniBar(r)}</span></button></li>`;
+      return `<li><button data-i="${i}" aria-current="${state.current === i}"><span class="o-name">${esc(names[i])}</span><span class="o-sub">${usd(r.netPrice)} net · ${usd(r.loans)} loans</span><span class="o-bar" aria-hidden="true">${miniBar(r)}</span></button></li>`;
     })
     .join('');
   $('#showCompare').disabled = state.letters.length < 2;
@@ -373,36 +374,44 @@ function tabEmail(letter, r) {
 }
 
 // ---------- compare ----------
+// Two offers from the same school (a first offer and a revised one) are told
+// apart by their place in the list.
+function displayNames() {
+  return state.letters.map((l, i) => (state.letters.filter((x) => x.school === l.school).length > 1 ? `${l.school} (offer ${i + 1})` : l.school));
+}
+
 function renderCompare(animate) {
   const rs = state.letters.map(resultFor);
+  const names = displayNames();
   const ranked = compare(rs);
-  const by = Object.fromEntries(rs.map((r) => [r.school, r]));
-  const max = Math.max(...rs.map(trueCost));
+  const max = Math.max(1, ...rs.map(trueCost));
   const best = ranked[0], second = ranked[1], last = ranked[ranked.length - 1];
   const min = (f) => Math.min(...rs.map(f));
   const cell = (r, f) => `<td class="num${f(r) === min(f) ? ' best' : ''}">${usd(f(r))}</td>`;
   const panel = $('#panel');
+  const verdict = last.moreThanBest < 1
+    ? `These offers cost the same over four years: ${usd(best.score)}.`
+    : `<b>${esc(names[best.i])}</b> costs the least over four years: <span class="g">${usd(last.moreThanBest)} less</span> than ${esc(names[last.i])}${second && second !== last ? ` and ${usd(second.moreThanBest)} less than ${esc(names[second.i])}` : ''}.`;
   panel.innerHTML = `<div class="cmp">
     <p class="mono dim meta">${rs.length} offers · ranked by four-year true cost</p>
     <h2>Compare offers</h2>
-    <p class="verdict on"><b>${esc(best.school)}</b> costs the least over four years: <span class="g">${usd(last.moreThanBest)} less</span> than ${esc(last.school)}${second && second !== last ? ` and ${usd(second.moreThanBest)} less than ${esc(second.school)}` : ''}.</p>
-    <div class="race${animate && !reduced ? ' anim' : ''}">${ranked.map(({ school }, i) => {
-      const r = by[school];
+    <p class="verdict on">${verdict}</p>
+    <div class="race${animate && !reduced ? ' anim' : ''}">${ranked.map(({ i: k }, i) => {
+      const r = rs[k];
       const tc = trueCost(r), extra = r.debt.interestInSchool + r.fourYear.fees;
-      const w = (tc / max) * 78;
-      return `<div class="race-row${i === 0 ? ' best' : ''}"><div class="nm">${esc(school)}<small>${usd(r.netPrice)} net price / year</small></div><div class="tk"><div class="fill" style="--w:${w}%;animation-delay:${i * 150}ms"><i class="np" style="width:${((tc - extra) / tc) * 100}%"></i><i class="it" style="width:${(extra / tc) * 100}%"></i></div>${i === 0 ? `<span class="stamp" style="--w:${w}%">lowest true cost</span>` : ''}</div><div class="v" data-to="${Math.round(tc)}" data-delay="${i * 150}">${usd(tc)}</div></div>`;
+      const w = Math.max(0, (tc / max) * 78);
+      return `<div class="race-row${i === 0 ? ' best' : ''}"><div class="nm">${esc(names[k])}<small>${usd(r.netPrice)} net price / year</small></div><div class="tk"><div class="fill" style="--w:${w}%;animation-delay:${i * 150}ms"><i class="np" style="width:${tc > 0 ? ((tc - extra) / tc) * 100 : 0}%"></i><i class="it" style="width:${tc > 0 ? (extra / tc) * 100 : 0}%"></i></div>${i === 0 ? `<span class="stamp" style="--w:${w}%">lowest true cost</span>` : ''}</div><div class="v" data-to="${Math.round(tc)}" data-delay="${i * 150}">${usd(tc)}</div></div>`;
     }).join('')}</div>
     <div class="race-key"><span><i style="background:var(--ink)"></i>Four years of net price</span><span><i style="background:var(--debt)"></i>Loan fees and interest while in school</span></div>
     <div class="tablewrap"><table><thead><tr><th>School</th><th class="num">4-year true cost</th><th class="num">Gift aid / year</th><th class="num">Net price / year</th><th class="num">Not covered / year</th><th class="num">Student debt at graduation</th><th class="num">Monthly payment</th><th class="num">Parent PLUS at graduation</th><th class="num">Flags</th></tr></thead><tbody>
-    ${ranked.map(({ school }) => {
-      const r = by[school];
-      const l = state.letters.find((x) => x.school === school);
-      const warns = flagsFor(l, r).filter((f) => f.level === 'warn').length;
-      return `<tr><td>${esc(school)}</td>${cell(r, trueCost)}<td class="num${r.gift === Math.max(...rs.map((x) => x.gift)) ? ' best' : ''}">${usd(r.gift)}</td>${cell(r, (x) => x.netPrice)}${cell(r, (x) => Math.max(0, x.outOfPocket))}${cell(r, (x) => x.debt.studentAtRepayment)}${cell(r, (x) => x.debt.studentMonthly)}${cell(r, (x) => x.debt.parentAtRepayment)}<td class="num">${warns}</td></tr>`;
+    ${ranked.map(({ i: k }) => {
+      const r = rs[k];
+      const warns = flagsFor(state.letters[k], r).filter((f) => f.level === 'warn').length;
+      return `<tr><td>${esc(names[k])}</td>${cell(r, trueCost)}<td class="num${r.gift === Math.max(...rs.map((x) => x.gift)) ? ' best' : ''}">${usd(r.gift)}</td>${cell(r, (x) => x.netPrice)}${cell(r, (x) => Math.max(0, x.outOfPocket))}${cell(r, (x) => x.debt.studentAtRepayment)}${cell(r, (x) => x.debt.studentMonthly)}${cell(r, (x) => x.debt.parentAtRepayment)}<td class="num">${warns}</td></tr>`;
     }).join('')}
     </tbody></table></div>
-    <p class="fine">“True cost” is four years of net price plus loan fees and the interest that builds while you're in school. Lowest in each column is green.</p>
-    <div class="cmp-bars">${rs.map((r, i) => `<div><h3>${esc(r.school)}</h3><div data-bar="${i}"></div><ul class="legend">${legendHTML(r)}</ul></div>`).join('')}</div>
+    <p class="fine">“True cost” is four years of net price plus loan fees and the interest that builds while you're in school. The best figure in each column is green: the most gift aid, the lowest of everything else.</p>
+    <div class="cmp-bars">${rs.map((r, i) => `<div><h3>${esc(names[i])}</h3><div data-bar="${i}"></div><ul class="legend">${legendHTML(r)}</ul></div>`).join('')}</div>
   </div>`;
   rs.forEach((r, i) => drawSplit($(`[data-bar="${i}"]`, panel), r, { animate }));
   settleCounts(panel, animate && !reduced);
