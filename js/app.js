@@ -650,14 +650,19 @@ async function takeFile(file) {
       const text = await pdfText(file);
       $('#letterText').value = text;
       status(text.trim() ? 'PDF text loaded. Check it, then press “Read it”.' : 'This PDF has no text layer (it is a scan). Use “Read it with Claude”.', !text.trim());
-    } else if (file.type.startsWith('image/')) {
+    } else if (file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name)) {
+      // The API takes JPEG, PNG, GIF and WebP images up to 5 MB.
+      if (!/^image\/(jpeg|png|gif|webp)$/.test(file.type)) return status('Claude reads JPEG, PNG, GIF and WebP photos. Save this one as a JPEG first.', true);
+      if (file.size > 5 * 1024 * 1024) return status('That photo is over 5 MB. Crop it or save it smaller first.', true);
       const data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(file); });
       pendingImage = { mediaType: file.type, data };
       status(state.key ? 'Photo loaded. Press “Read it with Claude”.' : 'Photos need Claude: add your API key under “Use Claude”.', !state.key);
       if (!state.key) $('details.claude-key').open = true;
-    } else {
+    } else if (file.type.startsWith('text/') || /\.(txt|text|csv|tsv|md)$/i.test(file.name)) {
       $('#letterText').value = await file.text();
       status('Text loaded. Press “Read it”.');
+    } else {
+      status('That file type can’t be read here. Use a PDF, a photo or a text file; from a Word file, copy the text and paste it.', true);
     }
   } catch (err) { status(`Couldn't read that file: ${err.message}`, true); }
 }
@@ -670,6 +675,16 @@ drop.addEventListener('drop', (e) => {
   const f = e.dataTransfer.files[0];
   if (f) takeFile(f);
   else { const t = e.dataTransfer.getData('text'); if (t) { $('#letterText').value = t; status('Text dropped in. Press “Read it”.'); } }
+});
+// A file dropped anywhere else on the page is read too, instead of the browser
+// leaving the page to open it.
+addEventListener('dragover', (e) => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault(); });
+addEventListener('drop', (e) => {
+  const f = e.dataTransfer?.files?.[0];
+  if (!f || drop.contains(e.target)) return;
+  e.preventDefault();
+  $('#paste').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+  takeFile(f);
 });
 
 async function pdfText(file) {
