@@ -58,7 +58,7 @@ export function flagsFor(letter, r) {
   if (guessed.length) add('info', 'Some lines were guessed from their section', `Check: ${guessed.map((l) => `"${l.label}"`).join(', ')}.`, guessed.map((l) => l.id));
 
   const unread = lines.filter((l) => l.guessed && l.category === 'info' && !l.total);
-  if (unread.length) add('info', unread.length === 1 ? 'One line isn\'t counted' : `${unread.length} lines aren't counted`, `The reader couldn't tell what ${unread.map((l) => `"${l.label}" (${usd(l.annual)})`).join(', ')} ${unread.length === 1 ? 'is' : 'are'}. If one is aid or a cost, set its category under Every line.`, unread.map((l) => l.id));
+  if (unread.length) add('info', unread.length === 1 ? 'One line isn\'t counted' : `${unread.length} lines aren't counted`, `The reader couldn't tell what ${unread.map((l) => `"${l.label}" (${usd(l.annual)})`).join(', ')} ${unread.length === 1 ? 'is. If it is aid or a cost' : 'are. If one is aid or a cost'}, set its category under Every line.`, unread.map((l) => l.id));
 
   return out;
 }

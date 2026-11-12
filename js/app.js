@@ -83,7 +83,7 @@ async function drawSplit(bar, r, { animate = true, labels = true, fromAll = fals
   await nextFrame();
   set();
 }
-const legendHTML = (r) => segments(r).map((p) => `<li><i style="background:${p.color}"></i>${esc(p.label)} <b>${usd(p.v)}</b></li>`).join('') + `<li class="coa">Cost of attendance <b>${usd(r.coa)}</b></li>`;
+const legendHTML = (r) => segments(r).map((p) => `<li><i style="background:${p.color}"></i>${esc(p.label)} <b>${usd(p.v)}</b></li>`).join('') + `<li class="coa">Cost of attendance <b>${r.coa ? usd(r.coa) : 'not listed'}</b></li>`;
 const miniBar = (r) => { const ps = segments(r); const t = ps.reduce((s, p) => s + p.v, 0) || 1; return ps.map((p) => `<i style="width:${(p.v / t) * 100}%;background:${p.color}"></i>`).join(''); };
 
 // ---------- the hero: a letter, marked up ----------
@@ -232,7 +232,7 @@ function renderList() {
   $('#letterList').innerHTML = state.letters
     .map((l, i) => {
       const r = resultFor(l);
-      return `<li><button data-i="${i}" aria-current="${state.current === i}"><span class="o-name">${esc(names[i])}</span><span class="o-sub">${usd(r.netPrice)} net · ${usd(r.loans)} loans</span><span class="o-bar" aria-hidden="true">${miniBar(r)}</span></button></li>`;
+      return `<li><button data-i="${i}" aria-current="${state.current === i}"><span class="o-name">${esc(names[i])}</span><span class="o-sub">${r.coa ? `${usd(r.netPrice)} net` : 'no costs listed'} · ${usd(r.loans)} loans</span><span class="o-bar" aria-hidden="true">${miniBar(r)}</span></button></li>`;
     })
     .join('');
   $('#showCompare').disabled = state.letters.length < 2;
@@ -241,6 +241,8 @@ function renderList() {
 
 // ---------- one offer ----------
 const kpi = (cls, k, v, s = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v" data-to="${Math.round(v)}">${usd(v)}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+// A figure that needs the cost of attendance, on a letter that lists no costs.
+const kpiNoCost = (cls, k) => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">—</div><div class="s">needs the cost of attendance</div></div>`;
 
 function verdictHTML(r) {
   const parts = [];
@@ -278,9 +280,9 @@ function renderLetter(i, animate) {
   kp.innerHTML = [
     kpi('gift', 'Free money this year', r.gift, r.reportedAid ? `${Math.round(r.giftShare * 100)}% of the ${usd(r.reportedAid)} called “aid”` : 'no aid listed'),
     kpi('debt', 'Loans offered this year', r.loans, r.loansBy.plus ? `${usd(r.loansBy.plus)} of it borrowed by a parent` : 'repaid with interest'),
-    kpi('', 'Net price this year', r.netPrice, 'cost of attendance minus gift aid'),
-    kpi('work', 'Still not covered', Math.max(0, r.outOfPocket), 'after grants, loans and work-study'),
-    kpi('dark', '4-year true cost', trueCost(r), 'net price plus loan fees and in-school interest'),
+    r.coa ? kpi('', 'Net price this year', r.netPrice, 'cost of attendance minus gift aid') : kpiNoCost('', 'Net price this year'),
+    r.coa ? kpi('work', 'Still not covered', Math.max(0, r.outOfPocket), 'after grants, loans and work-study') : kpiNoCost('work', 'Still not covered'),
+    r.coa ? kpi('dark', '4-year true cost', trueCost(r), 'net price plus loan fees and in-school interest') : kpiNoCost('dark', '4-year true cost'),
     kpi('debt', 'Borrowed over 4 years', r.fourYear.borrowed, `plus ${usd(d.interestInSchool)} interest before graduation`),
     kpi('debt', 'Student debt at graduation', d.studentAtRepayment, d.studentMonthly ? `about ${usd(d.studentMonthly)}/month for 10 years` : 'no student loans'),
     d.parentAtRepayment ? kpi('dark debt', 'Parent PLUS at graduation', d.parentAtRepayment, `about ${usd(d.parentMonthly)}/month for 10 years`) : kpi('', 'Loan fees over 4 years', r.fourYear.fees, 'taken out of each loan up front'),
