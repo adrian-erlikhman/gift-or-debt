@@ -219,7 +219,8 @@ const HERO = (() => {
 
   let started = false;
   const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting) && !started) { started = true; setTimeout(play, 350); } }, { threshold: 0.3 });
-  document.fonts.ready.then(() => { layout(); io.observe(stage); });
+  // ?video holds the hero until the demo recording cues it.
+  document.fonts.ready.then(() => { layout(); if (!new URLSearchParams(location.search).has('video')) io.observe(stage); });
   addEventListener('resize', () => requestAnimationFrame(layout));
   $('#replay').addEventListener('click', play);
   return { play };
