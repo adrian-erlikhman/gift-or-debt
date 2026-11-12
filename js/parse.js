@@ -24,7 +24,11 @@ const LOAN_NOUN = /\b(loans?|plus|stafford|perkins)\b/gi;
 const DIRECT_COST = /\b(tuition|fees?|housing|rooms?|board|meals?|dining|food|residence|on[-\s]campus living)\b/i;
 const INDIRECT_COST = /\b(books?|supplies|course materials|transportation|travel|personal|miscellaneous|misc\.?|computer|laptop|health insurance|loan fees?|living expenses|off[-\s]campus|other (education(al)? )?(costs?|expenses))\b/i;
 
-const PER_TERM = /\b(per|each|a|every)\s+(semester|term)\b|\/\s?semester|\bsemester(ly)?\b/i;
+const PER_TERM = /\b(per|each|a|every)\s+(semester|term)\b|\/\s?(semester|term)\b|\bsemesterly\b/i;
+// "renewable each semester", "disbursed each term": conditions, not the period
+// the amount is quoted for.
+const CONDITION = /\b(renew\w*|maintain\w*|keep|enroll\w*|must|if|provided|disbursed|paid out)\b[^.;)]*/gi;
+const withoutConditions = (s) => s.replace(CONDITION, ' ');
 const PER_QUARTER = /\b(per|each|a|every)\s+quarter\b|\/\s?quarter|\bquarterly\b/i;
 const PER_MONTH = /\b(per|a|each)\s+month\b|\/\s?mo(nth)?\b|\bmonthly\b/i;
 
@@ -53,8 +57,10 @@ export function toNumber(s) {
 }
 
 // A bare number is only money when it looks like money: not a year, not a
-// GPA, not part of a percentage, an ID or a phone number.
-function amountsIn(line) {
+// GPA, not part of a percentage, an ID, a phone number or a ZIP code. In a
+// letter that writes its amounts with dollar signs, a bare number without a
+// comma (a room number, a street address) is not money either.
+function amountsIn(line, dollarLetter = false) {
   const found = [];
   MONEY.lastIndex = 0;
   let m;
@@ -69,7 +75,10 @@ function amountsIn(line) {
     if (!hasDollar) {
       if (!raw.includes(',') && value >= 1900 && value <= 2099) continue; // a year
       if (!raw.includes(',') && value < 100) continue;
+      if (!raw.includes(',') && dollarLetter) continue;
       if (/\d{7,}/.test(line.replace(/[,\s]/g, '').slice(m.index, m.index + 8))) continue;
+      if (before === '(' && after.startsWith(')')) continue; // (213) 740-4444
+      if (/^\d{5}$/.test(raw) && /\b[A-Z]{2}\s+$/.test(line.slice(Math.max(0, m.index - 4), m.index))) continue; // CA 90089
     }
     if (value <= 0) continue;
     found.push({ value, raw, hasDollar });
@@ -87,7 +96,8 @@ function labelOf(line) {
     .replace(/\s{2,}/g, ' ')
     .replace(/\(\s*\)/g, '')
     .replace(/\s+[-–]\s*$/, '')
-    .trim();
+    .trim()
+    .replace(/^[-–—•*·>]+\s*/, ''); // list bullets
 }
 
 const lastAt = (re, s) => { let at = -1; for (const m of s.matchAll(re)) at = m.index; return at; };
@@ -126,21 +136,23 @@ function periodOf(text) {
 }
 
 export function parseLetter(text, fallbackName = 'School') {
-  const rows = String(text || '').split(/\r?\n/);
+  text = String(text || '');
+  const rows = text.split(/\r?\n/);
   const lines = [];
   const notes = [];
   let section = null;
   let termColumns = 0; // how many term columns (Fall, Spring...) the last header row had
   let totalColumn = false; // and whether it also had a Total column
   let school = null;
-  let letterPeriod = periodOf(
-    (text.match(/(amounts?|figures?|costs?|aid)[^.\n]{0,40}(are|shown)[^.\n]{0,40}(per|each)\s+(semester|term|quarter)/i) || [''])[0],
+  const dollarLetter = (text.match(/\$\s*\d/g) || []).length >= 3;
+  const letterPeriod = periodOf(
+    (withoutConditions(text).match(/(amounts?|figures?|costs?|aid)[^.\n]{0,40}(are|shown)[^.\n]{0,40}(per|each)\s+(semester|term|quarter)/i) || [''])[0],
   );
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i].trim();
     if (!row) continue;
-    const amounts = amountsIn(row);
+    const amounts = amountsIn(row, dollarLetter);
 
     if (!amounts.length) {
       if (!school && SCHOOL.test(row) && row.length < 90 && !/^dear\b/i.test(row)) {
@@ -182,7 +194,7 @@ export function parseLetter(text, fallbackName = 'School') {
       annual = all;
       how = termsNote(termColumns);
     } else {
-      const p = periodOf(row);
+      const p = periodOf(withoutConditions(row));
       const period = p.times > 1 ? p : letterPeriod;
       if (period.times > 1) {
         annual = values[0] * period.times;
@@ -218,5 +230,5 @@ export function parseLetter(text, fallbackName = 'School') {
   }
   if (letterPeriod.times > 1) notes.push(`The letter says its amounts are ${letterPeriod.note.split(',')[0]}; they were annualized.`);
 
-  return { school: tidyName(school) || fallbackName, lines, conditions, notes };
+  return { school: tidyName(school) || fallbackName, named: !!school, lines, conditions, notes };
 }

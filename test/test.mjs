@@ -123,6 +123,18 @@ t('three quarter columns are added; a line can name its own terms', () => {
   assert.equal(l.lines[0].label, 'Tuition');
 });
 
+t('"renewable each semester" is a condition, not a period', () => {
+  const r = analyze(parseLetter('Ash University\nTuition $20,000\nPresidential Scholarship $5,000 (renewable each semester with a 3.0 GPA)\nState Grant $1,000 per semester'));
+  near(r.gift, 7000);
+});
+
+t('room numbers, addresses, ZIP codes and phone numbers are not money', () => {
+  const l = parseLetter('Cedar University\nOffice of Financial Aid, Room 204, Smith Hall\n1200 Campus Drive, Los Angeles, CA 90089\nPhone: (213) 740-4444\nCost of Attendance\nTuition $40,000\nHousing $12,000\nYour Aid\nCedar Grant $15,000');
+  assert.deepEqual(l.lines.map((x) => x.annual), [40000, 12000, 15000]);
+  assert.equal(parseLetter('Elm College\nCall (213) 740-4444\nLos Angeles, CA 90089').lines.length, 0);
+  assert.equal(parseLetter('- Tuition 25,000.00\n• Hazel Scholarship 12,000.00').lines[1].label, 'Hazel Scholarship');
+});
+
 t('years, GPAs and percentages are not money', () => {
   const l = parseLetter('Oak College\n2026-27 award, renew with GPA 3.0 and 12 credits\nTuition $40,000\n100% of need met');
   assert.equal(l.lines.length, 1);
