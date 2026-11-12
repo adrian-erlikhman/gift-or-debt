@@ -27,6 +27,30 @@ t('classify basics', () => {
   assert.equal(loanKind('Mesa Ridge Partner Loan (private)'), 'private');
 });
 
+t('loan words inside grant names, plurals and job names', () => {
+  assert.equal(classify('Opportunity Plus Grant').category, 'gift');
+  assert.equal(classify('Loan Replacement Grant').category, 'gift');
+  assert.equal(classify('Nursing Scholarship Loan').category, 'loan');
+  assert.equal(classify('Tuition plus fees').category, 'cost');
+  assert.equal(classify('Parent PLUS').kind, 'plus');
+  assert.equal(classify('PLUS Loan').kind, 'plus');
+  assert.equal(classify('Parent PLUS loans').kind, 'plus');
+  assert.equal(classify('Grants from your school').category, 'gift');
+  assert.equal(classify('Federal loans').category, 'loan');
+  assert.equal(classify('Campus Employment').category, 'work');
+  assert.equal(classify('Other education costs').direct, false);
+});
+
+t('what the family pays, unmet need and payment plans are not aid', () => {
+  const l = parseLetter('Birch College\nCost of Attendance (COA): $55,000\nTuition and fees $40,000\nHousing and meals $15,000\nFinancial Aid\nBirch Grant $20,000\nGap Year Scholarship $1,000\nParent Contribution $8,000\nStudent Contribution $2,500\nUnmet Need $23,500\nGap $34,000\nMonthly payment plan: 10 payments of $950');
+  const r = analyze(l);
+  near(r.coa, 55000);
+  near(r.gift, 21000);
+  assert.ok(l.lines.find((x) => /COA/.test(x.label)).total);
+  assert.ok(l.lines.find((x) => x.label === 'Gap').total);
+  assert.ok(!flagsFor(l, r).some((f) => /total on the letter/i.test(f.title)), 'COA and the gap match the lines');
+});
+
 t('Harbor State: clean table', () => {
   const { l, r, f } = run(0);
   assert.equal(l.school, 'Harbor State University');

@@ -4,14 +4,25 @@
 
 const MONEY = /\$\s*\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\$\s*\d+(?:\.\d{2})?|\b\d{1,3}(?:,\d{3})+(?:\.\d{2})?\b|\b\d{3,6}(?:\.\d{2})?\b/g;
 
-const TOTAL = /\b(total|subtotal|net (price|cost)|estimated (net|cost|balance)|remaining|balance due|amount due|you (will )?owe|cost after|after aid|cost of attendance\s*$)/i;
-const INFO = /\b(student aid index|\bSAI\b|expected family contribution|\bEFC\b|family contribution|household|adjusted gross|AGI)\b/i;
+const TOTAL = /\b(total|subtotal|net (price|cost)|estimated (net|cost|balance)|remaining|balance due|amount due|you (will )?owe|cost after|after aid|out[-\s]of[-\s]pocket|gap(?! year))/i;
+// "Cost of Attendance", "Cost of Attendance (COA)", "Total COA": the sum of the costs.
+const COA = /^(estimated\s+|total\s+|annual\s+|your\s+)*(cost of attendance|COA|student budget)(\s*\([^)]*\))?(\s*(\/\s*yr|per year|for the year))?$/i;
+// Figures a letter shows that are neither aid nor a cost: what the family is
+// expected to pay, the need left over, a payment plan.
+const INFO = /\b(student aid index|SAI|expected family contribution|EFC|(family|parents?|parent's|parents'|student|student's|expected) contributions?|household|adjusted gross|AGI|payment plans?|summer earnings)\b/i;
+const NEED = /\b((unmet|remaining|demonstrated|financial|calculated) need|need met)\b/i;
+const GIFT_NAME = /\b(grants?|scholarships?|awards?)\b/i;
 
-const LOAN = /\b(loan|plus\b|stafford|perkins|direct sub|direct unsub|subsidized|unsubsidized|alternative financing|private (education )?financing)\b/i;
-const WORK = /\b(work[-\s]?study|\bFWS\b|federal work|student employment|campus job)\b/i;
-const GIFT = /\b(grant|scholarship|pell|\bSEOG\b|\bFSEOG\b|cal grant|waiver|fellowship|award|bursary|gift aid|tuition (discount|remission)|promise)\b/i;
-const DIRECT_COST = /\b(tuition|fees?|housing|room|board|meal|dining|food|residence|on[-\s]campus living)\b/i;
-const INDIRECT_COST = /\b(books?|supplies|course materials|transportation|travel|personal|miscellaneous|misc\.?|computer|laptop|health insurance|loan fees?|living expenses|off[-\s]campus)\b/i;
+const LOAN = /\b(loans?|stafford|perkins|direct sub(sidized)?|direct unsub(sidized)?|subsidized|unsubsidized|alternative financing|private (education )?financing)\b/i;
+// "Parent PLUS", "PLUS loan", "Direct PLUS". A plain "Plus" can be part of a
+// grant's name ("Opportunity Plus Grant"), so lowercase needs a loan word next to it.
+const PLUS_LOAN = /\bparents?'?\s+plus\b|\bplus\s+loans?\b|\b(direct|federal)\s+(parent\s+)?plus\b/i;
+const WORK = /\b(work[-\s]?study|FWS|federal work|(student|campus|on[-\s]campus|part[-\s]time) (employment|jobs?|work)|work (program|award))\b/i;
+const GIFT = /\b(grants?|scholarships?|pell|SEOG|FSEOG|cal grant|waivers?|fellowships?|awards?|bursar(y|ies)|gift aid|tuition (discount|remission|exchange)|promise)\b/i;
+const GIFT_NOUN = /\b(grants?|scholarships?|awards?|waivers?|fellowships?|bursar(y|ies))\b/gi;
+const LOAN_NOUN = /\b(loans?|plus|stafford|perkins)\b/gi;
+const DIRECT_COST = /\b(tuition|fees?|housing|rooms?|board|meals?|dining|food|residence|on[-\s]campus living)\b/i;
+const INDIRECT_COST = /\b(books?|supplies|course materials|transportation|travel|personal|miscellaneous|misc\.?|computer|laptop|health insurance|loan fees?|living expenses|off[-\s]campus|other (education(al)? )?(costs?|expenses))\b/i;
 
 const PER_TERM = /\b(per|each|a|every)\s+(semester|term)\b|\/\s?semester|\bsemester(ly)?\b/i;
 const PER_QUARTER = /\b(per|each|a|every)\s+quarter\b|\/\s?quarter|\bquarterly\b/i;
@@ -24,7 +35,7 @@ const TOTAL_COLUMN = /\b(total|annual|yearly|full year|academic year)\b/i;
 const termsIn = (s) => (s.match(TERMS) || []).length;
 
 const COST_HEADER = /\b(cost|costs|expenses|cost of attendance|budget|charges)\b/i;
-const AID_HEADER = /\b(aid|award|offer|package|financial aid|scholarships?)\b/i;
+const AID_HEADER = /\b(aid|awards?|offer|package|financial aid|scholarships?|grants?)\b/i;
 const SCHOOL = /\b(university|college|institute|school|academy|polytechnic)\b/i;
 
 const RENEW_BAD = /\b(first[-\s]year only|freshman year only|first year only|one[-\s]time|non[-\s]?renewable|not renewable|entering (year|students?) only|year one only)\b/i;
@@ -79,11 +90,16 @@ function labelOf(line) {
     .trim();
 }
 
+const lastAt = (re, s) => { let at = -1; for (const m of s.matchAll(re)) at = m.index; return at; };
+
 export function classify(label, section) {
-  if (INFO.test(label)) return { category: 'info' };
-  if (TOTAL.test(label)) return { category: 'info', total: true };
+  if (INFO.test(label) || (NEED.test(label) && !GIFT_NAME.test(label))) return { category: 'info' };
+  if (TOTAL.test(label) || COA.test(label.trim())) return { category: 'info', total: true };
   if (/\bloan (origination )?fees?\b/i.test(label)) return { category: 'cost', direct: false };
-  if (LOAN.test(label)) return { category: 'loan', kind: loanKind(label) };
+  const loan = LOAN.test(label) || PLUS_LOAN.test(label) || /\bPLUS\b/.test(label);
+  // Whichever noun comes last names the thing: "Loan Replacement Grant" is a
+  // grant, "Scholarship Loan" is a loan.
+  if (loan && !(GIFT.test(label) && lastAt(GIFT_NOUN, label) > lastAt(LOAN_NOUN, label))) return { category: 'loan', kind: loanKind(label) };
   if (WORK.test(label)) return { category: 'work' };
   if (GIFT.test(label)) return { category: 'gift' };
   if (DIRECT_COST.test(label)) return { category: 'cost', direct: true };
@@ -94,7 +110,7 @@ export function classify(label, section) {
 }
 
 export function loanKind(label) {
-  if (/\bparent\b|\bPLUS\b/i.test(label)) return 'plus';
+  if (/\bparents?\b|\bPLUS\b/i.test(label)) return 'plus';
   if (/\bunsub/i.test(label)) return 'unsub';
   if (/\bsub(sidized)?\b|direct sub/i.test(label)) return 'sub';
   if (/\b(private|alternative|bank|institutional|college loan|university loan)\b/i.test(label)) return 'private';
