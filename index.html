@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gift or Debt: what your college aid offer really costs</title>
+<meta name="description" content="Paste a college financial aid offer. See which aid is a gift and which is debt, what four years really cost, and what to ask the aid office.">
+<meta property="og:title" content="Gift or Debt">
+<meta property="og:description" content="Aid letters call loans &quot;aid.&quot; See what's a gift, what's debt, and what four years really cost.">
+<meta property="og:image" content="og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173a2e'/%3E%3Crect x='6' y='9' width='11' height='14' rx='2' fill='%2357c48a'/%3E%3Crect x='19' y='9' width='7' height='14' rx='2' fill='%23ef6b57'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip" href="#work">Skip to the tool</a>
+<header class="top">
+  <a class="brand" href="./"><span class="mark" aria-hidden="true"><i class="g"></i><i class="d"></i></span>Gift or Debt</a>
+  <nav>
+    <a href="#how">How it works</a>
+    <a href="https://github.com/adrian-erlikhman/gift-or-debt">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <p class="eyebrow">For students comparing college offers</p>
+      <h1>Your aid letter calls loans <em>“aid.”</em></h1>
+      <p class="lede">Paste in a financial aid offer. Gift or Debt separates the money you keep from the money you repay, works out what four years really cost, and writes the questions to ask the aid office.</p>
+      <div class="cta">
+        <button id="tryDemo" class="btn primary">Try three sample offers</button>
+        <a class="btn" href="#paste">Paste your own</a>
+      </div>
+      <p class="fine">Runs in your browser. Nothing you paste leaves this page unless you turn on Claude with your own key.</p>
+    </div>
+    <figure class="hero-bar" aria-label="Example: how a $53,130 offer splits">
+      <figcaption>A real-looking offer, split honestly</figcaption>
+      <div class="bar big" id="heroBar"></div>
+      <ul class="legend" id="heroLegend"></ul>
+    </figure>
+  </section>
+
+  <section id="work" class="work" hidden>
+    <aside class="letters">
+      <h2>Offers</h2>
+      <ol id="letterList"></ol>
+      <button class="btn small" id="addLetter">+ Add an offer</button>
+      <button class="btn small ghost" id="showCompare">Compare all</button>
+    </aside>
+    <div class="panel" id="panel"></div>
+  </section>
+
+  <section id="paste" class="paste">
+    <h2>Add an offer</h2>
+    <p class="hint">Copy the text of the letter or the aid portal page and paste it here. A PDF works too. Fall/spring columns, per-semester amounts and footnotes are handled.</p>
+    <div class="paste-grid">
+      <label class="field">School name <span class="opt">(optional)</span>
+        <input id="schoolName" type="text" autocomplete="off" placeholder="Read from the letter if left blank">
+      </label>
+      <label class="field file">PDF or photo of the letter
+        <input id="fileIn" type="file" accept=".pdf,.txt,image/*">
+      </label>
+    </div>
+    <label class="field">Letter text
+      <textarea id="letterText" rows="12" spellcheck="false" placeholder="Federal Pell Grant ........ $4,600&#10;Federal Direct Subsidized Loan ........ $3,500&#10;Tuition and fees ........ $13,840&#10;…"></textarea>
+    </label>
+    <div class="row">
+      <button class="btn primary" id="readRules">Read it</button>
+      <button class="btn" id="readClaude" disabled title="Add an API key under “Use Claude” first">Read it with Claude</button>
+      <span id="readStatus" class="status" role="status"></span>
+    </div>
+    <details class="claude">
+      <summary>Use Claude (optional, your own key)</summary>
+      <p>Claude can read photos, scanned PDFs and odd layouts, and reword the email to the aid office. It never does the math: every amount it reads is checked against the letter's text before the page uses it. Your key stays in this tab and is sent only to api.anthropic.com.</p>
+      <div class="paste-grid">
+        <label class="field">Anthropic API key <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+        <label class="field">Model <select id="model"></select></label>
+      </div>
+    </details>
+  </section>
+
+  <section id="how" class="how">
+    <h2>How it works</h2>
+    <div class="cols">
+      <div>
+        <h3>1. Read the letter</h3>
+        <p>Rules find every dollar amount and what it belongs to: cost, grant, loan or work-study. Totals are set aside and checked against the lines. Fall/spring columns and “per semester” amounts are turned into a year. Every line keeps the words it came from, and you can fix any of them.</p>
+      </div>
+      <div>
+        <h3>2. Do the math in the open</h3>
+        <p>Net price is the cost of attendance minus gift aid. Loans and work-study don't lower it; they're ways to pay it. Four years: costs grow by an assumed rate you can change, first-year-only awards drop off, and borrowing repeats. Interest builds on unsubsidized, private and Parent PLUS loans while you're in school.</p>
+      </div>
+      <div>
+        <h3>3. Flag the tricks</h3>
+        <p>Loans counted as aid. A Parent PLUS loan quietly closing the gap. Books and transportation left out. A scholarship that's first-year only. Totals that don't match their lines. Then it drafts polite questions for the aid office.</p>
+      </div>
+    </div>
+    <p class="fine">Loan terms are for loans first disbursed July 1, 2026 to June 30, 2027 (Federal Student Aid, GENERAL-26-33): 6.52% for undergraduate Direct Loans with a 1.057% fee, 9.07% for Parent PLUS with a 4.228% fee. Monthly payments assume the standard 10-year plan. These are estimates to check with the school, not financial advice.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Gift or Debt is open source (MIT). Built by Adrian Erlikhman and Michael Tarekegn. The sample schools are fictional.</p>
+</footer>
+
+<template id="tplPanel">
+  <div class="panel-head">
+    <h2 class="school"></h2>
+    <div class="head-actions">
+      <button class="btn small ghost" data-act="assumptions">Assumptions</button>
+      <button class="btn small ghost" data-act="print">Print</button>
+      <button class="btn small ghost danger" data-act="remove">Remove</button>
+    </div>
+  </div>
+  <div class="split">
+    <div class="bar" data-slot="bar"></div>
+    <ul class="legend" data-slot="legend"></ul>
+  </div>
+  <div class="stats" data-slot="stats"></div>
+  <div class="assumptions" data-slot="assumptions" hidden></div>
+  <h3>What this letter does</h3>
+  <ul class="flags" data-slot="flags"></ul>
+  <h3>Four years</h3>
+  <div class="tablewrap"><table class="years" data-slot="years"></table></div>
+  <h3>Every line, and what it is</h3>
+  <p class="hint">Change a category or amount if the reader got it wrong. Everything updates.</p>
+  <div class="tablewrap"><table class="lines" data-slot="lines"></table></div>
+  <h3>Ask the aid office</h3>
+  <div class="email" data-slot="email"></div>
+</template>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
