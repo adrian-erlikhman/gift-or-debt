@@ -17,6 +17,12 @@ const PER_TERM = /\b(per|each|a|every)\s+(semester|term)\b|\/\s?semester|\bsemes
 const PER_QUARTER = /\b(per|each|a|every)\s+quarter\b|\/\s?quarter|\bquarterly\b/i;
 const PER_MONTH = /\b(per|a|each)\s+month\b|\/\s?mo(nth)?\b|\bmonthly\b/i;
 
+// Term columns: a header row like "Fall  Spring  Total", or a line that names
+// its own terms ("Fall 2026 $9,000 / Spring 2027 $9,000").
+const TERMS = /\b(fall|autumn|winter|spring|summer)\b/gi;
+const TOTAL_COLUMN = /\b(total|annual|yearly|full year|academic year)\b/i;
+const termsIn = (s) => (s.match(TERMS) || []).length;
+
 const COST_HEADER = /\b(cost|costs|expenses|cost of attendance|budget|charges)\b/i;
 const AID_HEADER = /\b(aid|award|offer|package|financial aid|scholarships?)\b/i;
 const SCHOOL = /\b(university|college|institute|school|academy|polytechnic)\b/i;
@@ -108,7 +114,8 @@ export function parseLetter(text, fallbackName = 'School') {
   const lines = [];
   const notes = [];
   let section = null;
-  let termColumns = false; // a header row with Fall and Spring columns
+  let termColumns = 0; // how many term columns (Fall, Spring...) the last header row had
+  let totalColumn = false; // and whether it also had a Total column
   let school = null;
   let letterPeriod = periodOf(
     (text.match(/(amounts?|figures?|costs?|aid)[^.\n]{0,40}(are|shown)[^.\n]{0,40}(per|each)\s+(semester|term|quarter)/i) || [''])[0],
@@ -124,7 +131,7 @@ export function parseLetter(text, fallbackName = 'School') {
         const m = row.match(/((?:[A-Z][\w'&.-]*\s+){0,5}(?:University|UNIVERSITY|College|COLLEGE|Institute|INSTITUTE|Academy|ACADEMY|Polytechnic)(?:\s+of(?:\s+[A-Z][\w'&.-]*)+)?)/);
         if (m && !/^(Office|Dear|Welcome)\b/i.test(m[1])) school = m[1].trim();
       }
-      if (/\bfall\b/i.test(row) && /\bspring\b/i.test(row)) termColumns = true;
+      if (termsIn(row) >= 2) { termColumns = termsIn(row); totalColumn = TOTAL_COLUMN.test(row); }
       if (row.length < 60) {
         if (COST_HEADER.test(row) && !AID_HEADER.test(row)) section = 'cost';
         else if (AID_HEADER.test(row)) section = 'aid';
@@ -133,7 +140,9 @@ export function parseLetter(text, fallbackName = 'School') {
       continue;
     }
 
-    const label = labelOf(row) || '(no label)';
+    const rowTerms = termsIn(row);
+    let label = labelOf(row) || '(no label)';
+    if (rowTerms >= 2) label = label.replace(TERMS, ' ').replace(/(^|\s)[/,;]+(?=\s|$)/g, ' ').replace(/\s{2,}/g, ' ').trim() || label;
     const kind = classify(label, section);
     const values = amounts.map((a) => a.value);
     let annual = values[0];
@@ -141,12 +150,21 @@ export function parseLetter(text, fallbackName = 'School') {
 
     const last = values[values.length - 1];
     const rest = values.slice(0, -1).reduce((s, v) => s + v, 0);
-    if (values.length >= 2 && Math.abs(last - rest) <= 2) {
+    const all = values.reduce((s, v) => s + v, 0);
+    const termsNote = (n) => (n === 2 ? 'fall plus spring' : `${n} terms added`);
+    if (rowTerms >= 2 && values.length === rowTerms) {
+      annual = all;
+      how = termsNote(rowTerms);
+    } else if (termColumns >= 2 && !totalColumn && values.length === termColumns) {
+      // Fall and Spring columns with no Total column: equal terms are not a total.
+      annual = all;
+      how = termsNote(termColumns);
+    } else if (values.length >= 2 && Math.abs(last - rest) <= 2) {
       annual = last;
       how = 'last column is the year total';
-    } else if (values.length === 2 && termColumns) {
-      annual = values[0] + values[1];
-      how = 'fall plus spring';
+    } else if (termColumns >= 2 && values.length === termColumns) {
+      annual = all;
+      how = termsNote(termColumns);
     } else {
       const p = periodOf(row);
       const period = p.times > 1 ? p : letterPeriod;

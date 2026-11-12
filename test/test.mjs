@@ -81,6 +81,24 @@ t('semester amounts get annualized', () => {
   near(r.gift, 6000);
 });
 
+t('Fall and Spring columns with no Total column are added, even when equal', () => {
+  const l = parseLetter('Pine University\n                 Fall      Spring\nTuition          $10,000   $10,000\nPell Grant       $1,450    $1,300\nDirect Subsidized Loan $1,750 $1,750');
+  const r = analyze(l);
+  near(r.coa, 20000);
+  near(r.gift, 2750);
+  near(r.loansBy.sub, 3500);
+});
+
+t('three quarter columns are added; a line can name its own terms', () => {
+  const q = analyze(parseLetter('Coast University\nCost              Fall     Winter   Spring\nTuition           $5,000   $5,000   $5,000\nUniversity Grant  $2,000   $2,000   $2,000'));
+  near(q.coa, 15000);
+  near(q.gift, 6000);
+  const l = parseLetter('Oak College\nTuition: Fall 2026 $9,000 / Spring 2027 $9,000\nMerit Scholarship: Fall 2026 $3,000, Spring 2027 $3,000');
+  near(analyze(l).coa, 18000);
+  near(analyze(l).gift, 6000);
+  assert.equal(l.lines[0].label, 'Tuition');
+});
+
 t('years, GPAs and percentages are not money', () => {
   const l = parseLetter('Oak College\n2026-27 award, renew with GPA 3.0 and 12 credits\nTuition $40,000\n100% of need met');
   assert.equal(l.lines.length, 1);
