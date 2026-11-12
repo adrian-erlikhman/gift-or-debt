@@ -160,9 +160,12 @@ export function parseLetter(text, fallbackName = 'School') {
     const amounts = amountsIn(row, dollarLetter);
 
     if (!amounts.length) {
-      if (!school && SCHOOL.test(row) && row.length < 90 && !/^dear\b/i.test(row)) {
+      // The school's name: "Linden College", "University of Michigan", also
+      // inside a sentence ("Congratulations! Northfield College is pleased..."),
+      // but not a lone "the College".
+      if (!school && SCHOOL.test(row) && row.length < 240 && !/^dear\b/i.test(row)) {
         const m = row.match(/((?:[A-Z][\w'&.-]*\s+){0,5}(?:University|UNIVERSITY|College|COLLEGE|Institute|INSTITUTE|Academy|ACADEMY|Polytechnic)(?:\s+of(?:\s+[A-Z][\w'&.-]*)+)?)/);
-        if (m && !/^(Office|Dear|Welcome)\b/i.test(m[1])) school = m[1].trim();
+        if (m && /\s/.test(m[1].trim()) && !/^(Office|Dear|Welcome|Congratulations)\b/i.test(m[1])) school = m[1].trim();
       }
       if (termsIn(row) >= 2) { termColumns = termsIn(row); totalColumn = TOTAL_COLUMN.test(row); }
       if (row.length < 60) {

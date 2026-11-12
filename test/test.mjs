@@ -175,6 +175,13 @@ t('a letter with aid but no costs gets one clear flag, and unread lines are list
   assert.ok(f.some((x) => /isn't counted/.test(x.title) && /Smith Fund/.test(x.detail)));
 });
 
+t('the school name is found inside a sentence, but not "the College"', () => {
+  assert.equal(parseLetter('Dear Alex,\nCongratulations! Northfield College is pleased to offer you the following aid for the 2026-2027 academic year.\nTuition $60,000').school, 'Northfield College');
+  const l = parseLetter('Loans are made by the U.S. Department of Education, not by the College.\nTuition $60,000', 'School 2');
+  assert.equal(l.school, 'School 2');
+  assert.equal(l.named, false);
+});
+
 t('years, GPAs and percentages are not money', () => {
   const l = parseLetter('Oak College\n2026-27 award, renew with GPA 3.0 and 12 credits\nTuition $40,000\n100% of need met');
   assert.equal(l.lines.length, 1);
