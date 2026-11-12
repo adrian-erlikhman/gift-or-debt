@@ -5,128 +5,209 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gift or Debt: what your college aid offer really costs</title>
 <meta name="description" content="Paste a college financial aid offer. See which aid is a gift and which is debt, what four years really cost, and what to ask the aid office.">
+<meta name="theme-color" content="#f6f6f3">
 <meta property="og:title" content="Gift or Debt">
 <meta property="og:description" content="Aid letters call loans &quot;aid.&quot; See what's a gift, what's debt, and what four years really cost.">
-<meta property="og:image" content="og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173a2e'/%3E%3Crect x='6' y='9' width='11' height='14' rx='2' fill='%2357c48a'/%3E%3Crect x='19' y='9' width='7' height='14' rx='2' fill='%23ef6b57'/%3E%3C/svg%3E">
+<meta property="og:image" content="https://adrian-erlikhman.github.io/gift-or-debt/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M14.6 3.2a12.8 12.8 0 0 0 0 25.6z' fill='%2312a150'/%3E%3Cpath d='M17.4 4.6a12.8 12.8 0 0 1 0 25.6z' fill='%23e5372b'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/shantell.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
-<a class="skip" href="#work">Skip to the tool</a>
-<header class="top">
-  <a class="brand" href="./"><span class="mark" aria-hidden="true"><i class="g"></i><i class="d"></i></span>Gift or Debt</a>
-  <nav>
+<a class="skip" href="#try">Skip to the tool</a>
+
+<header class="nav">
+  <a class="brand" href="./" aria-label="Gift or Debt, home">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M14.6 3.2a12.8 12.8 0 0 0 0 25.6z" class="mg"/><path d="M17.4 4.6a12.8 12.8 0 0 1 0 25.6z" class="md"/></svg>
+    <span>Gift <i>or</i> Debt</span>
+  </a>
+  <nav class="links" aria-label="Sections">
+    <a href="#try">Try it</a>
     <a href="#how">How it works</a>
+    <a href="#claude">Where Claude fits</a>
     <a href="https://github.com/adrian-erlikhman/gift-or-debt">GitHub</a>
   </nav>
+  <button class="btn dark sm" data-demo>Try 3 sample offers <span class="arr" aria-hidden="true">→</span></button>
 </header>
 
 <main>
-  <section class="hero">
-    <div>
-      <p class="eyebrow">For students comparing college offers</p>
-      <h1>Your aid letter calls loans <em>“aid.”</em></h1>
-      <p class="lede">Paste in a financial aid offer. Gift or Debt separates the money you keep from the money you repay, works out what four years really cost, and writes the questions to ask the aid office.</p>
-      <div class="cta">
-        <button id="tryDemo" class="btn primary">Try three sample offers</button>
-        <a class="btn" href="#paste">Paste your own</a>
-      </div>
-      <p class="fine">Runs in your browser. Nothing you paste leaves this page unless you turn on Claude with your own key.</p>
+  <section class="hero" aria-labelledby="h1">
+    <p class="kicker mono">For students comparing college offers</p>
+    <h1 id="h1">Your aid letter calls loans <span class="circled">“aid.”<svg viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M42 70 C 30 28, 120 10, 190 16 C 262 22, 292 52, 270 84 C 248 112, 140 116, 78 104 C 30 95, 12 62, 52 40"/></svg></span></h1>
+    <p class="lede">Paste a financial aid offer. Gift or Debt marks up every line the way a counselor would, splits the money you keep from the money you repay, and shows what four years really cost.</p>
+    <div class="cta">
+      <button class="btn dark lg" data-demo>Try 3 sample offers <span class="arr" aria-hidden="true">→</span></button>
+      <a class="btn lg" href="#paste">Paste your own letter</a>
     </div>
-    <figure class="hero-bar" aria-label="Example: how a $53,130 offer splits">
-      <figcaption>A sample offer, split honestly</figcaption>
-      <div class="bar big" id="heroBar"></div>
-      <ul class="legend" id="heroLegend"></ul>
-    </figure>
+    <p class="trust mono"><span>Runs in your browser</span><span>No account</span><span>Nothing you paste leaves the page</span></p>
+
+    <div class="stage" id="stage" aria-label="A sample offer, marked up: Linden College lists $80,300 in aid; $43,000 is a gift and $34,300 is debt.">
+      <div class="letter" id="heroLetter" aria-hidden="true"></div>
+      <div class="truth" id="heroTruth" aria-hidden="true"></div>
+      <button class="replay mono" id="replay" type="button" aria-label="Replay the animation"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v2.8h2.8"/></svg>Replay</button>
+    </div>
   </section>
 
-  <section id="work" class="work" hidden>
-    <aside class="letters">
-      <h2>Offers</h2>
-      <ol id="letterList"></ol>
-      <button class="btn small" id="addLetter">+ Add an offer</button>
-      <button class="btn small ghost" id="showCompare">Compare all</button>
-    </aside>
-    <div class="panel" id="panel"></div>
+  <section class="try" id="try" aria-labelledby="tryh">
+    <div class="sec-head">
+      <p class="mono label">§01 · Try it</p>
+      <h2 id="tryh">Drop in a letter, or open ours.</h2>
+    </div>
+
+    <div id="work" class="workspace" hidden>
+      <aside class="offers" aria-label="Offers">
+        <p class="mono label">Offers</p>
+        <ol id="letterList"></ol>
+        <button class="btn sm wide" id="showCompare"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h3V7H2zM6.5 13h3V3h-3zM11 13h3V9h-3z"/></svg>Compare all</button>
+        <button class="btn sm wide ghost" id="addLetter">+ Add an offer</button>
+      </aside>
+      <div class="panel" id="panel" aria-live="polite"></div>
+    </div>
+
+    <div class="intake" id="paste">
+      <div class="drop" id="drop">
+        <div class="drop-top">
+          <div>
+            <h3>Add an offer</h3>
+            <p class="hint">Paste the letter or the aid portal page. Fall/spring columns, per-semester amounts and footnotes are handled. A PDF works too.</p>
+          </div>
+          <label class="file-btn btn sm">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2.5M4.5 6 8 2.5 11.5 6M2.5 10.5v3h11v-3"/></svg>Upload PDF or photo
+            <input id="fileIn" type="file" accept=".pdf,.txt,image/*">
+          </label>
+        </div>
+        <label class="field">
+          <span class="sr-only">Letter text</span>
+          <textarea id="letterText" rows="9" spellcheck="false" placeholder="Federal Pell Grant ........ $4,600&#10;Federal Direct Subsidized Loan ........ $3,500&#10;Tuition and fees ........ $13,840&#10;…"></textarea>
+        </label>
+        <div class="drop-foot">
+          <label class="field inline">School <input id="schoolName" type="text" autocomplete="off" placeholder="read from the letter"></label>
+          <div class="row">
+            <span id="readStatus" class="status" role="status"></span>
+            <button class="btn" id="readClaude" disabled title="Add an API key under “Use Claude” first">Read it with Claude</button>
+            <button class="btn dark" id="readRules">Read it <span class="arr" aria-hidden="true">→</span></button>
+          </div>
+        </div>
+        <details class="claude-key">
+          <summary>Use Claude <span class="dim">(optional, your own key)</span></summary>
+          <p>Claude can read photos, scanned PDFs and odd layouts, and reword the email. It never does the math: every amount it reads is checked against the letter's text before the page uses it. Your key stays in this tab and is sent only to api.anthropic.com.</p>
+          <div class="kgrid">
+            <label class="field">Anthropic API key <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+            <label class="field">Model <select id="model"></select></label>
+          </div>
+        </details>
+        <div class="dropveil" aria-hidden="true"><span>Drop it here</span></div>
+      </div>
+
+      <div class="samples">
+        <p class="mono label">Or open a sample letter</p>
+        <button class="env" data-sample="0">
+          <span class="env-name">Harbor State University</span>
+          <span class="env-note">A clean table</span>
+          <span class="env-bar" data-mini="0" aria-hidden="true"></span>
+        </button>
+        <button class="env" data-sample="1">
+          <span class="env-name">Linden College</span>
+          <span class="env-note">“Covers 100% of your direct costs!”</span>
+          <span class="env-bar" data-mini="1" aria-hidden="true"></span>
+        </button>
+        <button class="env" data-sample="2">
+          <span class="env-name">Mesa Ridge University</span>
+          <span class="env-note">Fall/spring columns, footnotes</span>
+          <span class="env-bar" data-mini="2" aria-hidden="true"></span>
+        </button>
+        <p class="fine">The three schools are fictional. The tricks are not.</p>
+      </div>
+    </div>
   </section>
 
-  <section id="paste" class="paste">
-    <h2>Add an offer</h2>
-    <p class="hint">Copy the text of the letter or the aid portal page and paste it here. A PDF works too. Fall/spring columns, per-semester amounts and footnotes are handled.</p>
-    <div class="paste-grid">
-      <label class="field">School name <span class="opt">(optional)</span>
-        <input id="schoolName" type="text" autocomplete="off" placeholder="Read from the letter if left blank">
-      </label>
-      <label class="field file">PDF or photo of the letter
-        <input id="fileIn" type="file" accept=".pdf,.txt,image/*">
-      </label>
+  <section class="how" id="how" aria-labelledby="howh">
+    <div class="sec-head">
+      <p class="mono label">§02 · How it works</p>
+      <h2 id="howh">Name every dollar. Then do the math in the open.</h2>
     </div>
-    <label class="field">Letter text
-      <textarea id="letterText" rows="12" spellcheck="false" placeholder="Federal Pell Grant ........ $4,600&#10;Federal Direct Subsidized Loan ........ $3,500&#10;Tuition and fees ........ $13,840&#10;…"></textarea>
-    </label>
-    <div class="row">
-      <button class="btn primary" id="readRules">Read it</button>
-      <button class="btn" id="readClaude" disabled title="Add an API key under “Use Claude” first">Read it with Claude</button>
-      <span id="readStatus" class="status" role="status"></span>
-    </div>
-    <details class="claude">
-      <summary>Use Claude (optional, your own key)</summary>
-      <p>Claude can read photos, scanned PDFs and odd layouts, and reword the email to the aid office. It never does the math: every amount it reads is checked against the letter's text before the page uses it. Your key stays in this tab and is sent only to api.anthropic.com.</p>
-      <div class="paste-grid">
-        <label class="field">Anthropic API key <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
-        <label class="field">Model <select id="model"></select></label>
-      </div>
-    </details>
+    <ol class="steps">
+      <li class="rv">
+        <span class="step-n mono">01</span>
+        <h3>Read the letter</h3>
+        <p>Rules find every dollar amount and what it is: cost, grant, loan or work-study. Totals are set aside and checked against the lines. Fall/spring columns and “per semester” amounts become a year. Every line keeps the words it came from, and you can fix any of them.</p>
+        <div class="mini mini-read" aria-hidden="true"><i class="c"></i><i class="g"></i><i class="r"></i><i class="g"></i><i class="a"></i><i class="p"></i></div>
+      </li>
+      <li class="rv">
+        <span class="step-n mono">02</span>
+        <h3>Split the money</h3>
+        <p>Net price is the cost of attendance minus gift aid. Loans and work-study don't lower it; they're ways to pay it. Over four years costs grow, first-year-only awards drop off, borrowing repeats and interest builds on unsubsidized, private and Parent PLUS loans while you're in school.</p>
+        <div class="mini mini-split" aria-hidden="true"><i class="g"></i><i class="r"></i><i class="p"></i><i class="a"></i></div>
+      </li>
+      <li class="rv">
+        <span class="step-n mono">03</span>
+        <h3>Flag it, then ask</h3>
+        <p>Loans counted as aid. A Parent PLUS loan closing the gap. Books and travel left out. A scholarship that's first-year only. Totals that don't match their lines. Then it drafts polite, specific questions for the aid office.</p>
+        <div class="mini mini-flag" aria-hidden="true"><span>43% of the “aid” is debt</span><span>Parent PLUS above the cap</span></div>
+      </li>
+    </ol>
   </section>
 
-  <section id="how" class="how">
-    <h2>How it works</h2>
-    <div class="cols">
+  <section class="band" id="claude" aria-labelledby="claudeh">
+    <div class="band-in">
       <div>
-        <h3>1. Read the letter</h3>
-        <p>Rules find every dollar amount and what it belongs to: cost, grant, loan or work-study. Totals are set aside and checked against the lines. Fall/spring columns and “per semester” amounts are turned into a year. Every line keeps the words it came from, and you can fix any of them.</p>
+        <p class="mono label">§03 · Where Claude fits</p>
+        <h2 id="claudeh">Claude can read the letter. It never does the math.</h2>
+        <p>Without a key, everything runs on rules and plain arithmetic. With your own Anthropic key, held only in this tab, Claude reads what the rules can't: a photo of a paper letter, a scanned PDF, an odd layout. It can also reword the email.</p>
       </div>
-      <div>
-        <h3>2. Do the math in the open</h3>
-        <p>Net price is the cost of attendance minus gift aid. Loans and work-study don't lower it; they're ways to pay it. Four years: costs grow by an assumed rate you can change, first-year-only awards drop off, and borrowing repeats. Interest builds on unsubsidized, private and Parent PLUS loans while you're in school.</p>
-      </div>
-      <div>
-        <h3>3. Flag the tricks</h3>
-        <p>Loans counted as aid. A Parent PLUS loan quietly closing the gap. Books and transportation left out. A scholarship that's first-year only. Totals that don't match their lines. Then it drafts polite questions for the aid office.</p>
-      </div>
+      <ul class="guards">
+        <li class="rv"><b>Every amount is checked.</b> Before the page uses a line Claude read, its dollar figure has to appear in the letter's text. A number the model invents or misreads is dropped.</li>
+        <li class="rv"><b>Photos are marked.</b> Lines read from a photo can't be checked that way, so each one is flagged for you to confirm.</li>
+        <li class="rv"><b>The email keeps its numbers.</b> Every dollar figure in Claude's rewording has to appear in the draft, or the draft is kept.</li>
+        <li class="rv"><b>The math is code.</b> Every number on the page comes from <code>js/money.js</code>, covered by tests.</li>
+      </ul>
     </div>
-    <p class="fine">Loan terms are for loans first disbursed July 1, 2026 to June 30, 2027 (Federal Student Aid, GENERAL-26-33): 6.52% for undergraduate Direct Loans with a 1.057% fee, 9.07% for Parent PLUS with a 4.228% fee. Monthly payments assume the standard 10-year plan. These are estimates to check with the school, not financial advice.</p>
+  </section>
+
+  <section class="terms" aria-label="Loan terms">
+    <p class="fine">Loan terms are for loans first disbursed July 1, 2026 to June 30, 2027 (Federal Student Aid, GENERAL-26-33): 6.52% for undergraduate Direct Loans with a 1.057% fee, 9.07% for Parent PLUS with a 4.228% fee. Monthly payments assume the standard 10-year plan. Every assumption can be changed on the page. These are estimates to check with the school, not financial advice.</p>
   </section>
 </main>
 
 <footer class="foot">
-  <p>Gift or Debt is open source (MIT). Built by Adrian Erlikhman and Michael Tarekegn. The sample schools are fictional.</p>
+  <span class="brand sm"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M14.6 3.2a12.8 12.8 0 0 0 0 25.6z" class="mg"/><path d="M17.4 4.6a12.8 12.8 0 0 1 0 25.6z" class="md"/></svg>Gift <i>or</i> Debt</span>
+  <p>Open source (MIT). Built by Adrian Erlikhman and Michael Tarekegn. The sample schools are fictional.</p>
+  <a href="https://github.com/adrian-erlikhman/gift-or-debt">GitHub</a>
 </footer>
 
+<div class="drawer" id="drawer" hidden>
+  <div class="drawer-in" role="dialog" aria-modal="true" aria-labelledby="drawerh">
+    <div class="drawer-head"><h3 id="drawerh">Assumptions</h3><button class="x" data-act="close-drawer" aria-label="Close">×</button></div>
+    <div class="assumptions" id="assumptions"></div>
+  </div>
+</div>
+
 <template id="tplPanel">
-  <div class="panel-head">
-    <h2 class="school"></h2>
+  <div class="p-head">
+    <div>
+      <p class="mono dim meta" data-slot="meta"></p>
+      <h2 class="school"></h2>
+    </div>
     <div class="head-actions">
-      <button class="btn small ghost" data-act="assumptions">Assumptions</button>
-      <button class="btn small ghost" data-act="print">Print</button>
-      <button class="btn small ghost danger" data-act="remove">Remove</button>
+      <button class="btn sm ghost" data-act="assumptions"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h7M12 4h2M2 12h2M7 12h7M9.5 2.5v3M5.5 10.5v3"/></svg>Assumptions</button>
+      <button class="btn sm ghost" data-act="print">Print</button>
+      <button class="btn sm ghost danger" data-act="remove">Remove</button>
     </div>
   </div>
-  <div class="split">
-    <div class="bar" data-slot="bar"></div>
-    <ul class="legend" data-slot="legend"></ul>
+  <p class="verdict" data-slot="verdict"></p>
+  <div class="split" data-slot="split"></div>
+  <div class="kpis" data-slot="kpis"></div>
+  <div class="tabs" role="tablist" aria-label="Details">
+    <button role="tab" data-tab="flags">What this letter does <span class="n" data-slot="nflags"></span></button>
+    <button role="tab" data-tab="years">Four years</button>
+    <button role="tab" data-tab="lines">Every line</button>
+    <button role="tab" data-tab="email">Ask the aid office</button>
+    <span class="tab-ink" aria-hidden="true"></span>
   </div>
-  <div class="stats" data-slot="stats"></div>
-  <div class="assumptions" data-slot="assumptions" hidden></div>
-  <h3>What this letter does</h3>
-  <ul class="flags" data-slot="flags"></ul>
-  <h3>Four years</h3>
-  <div class="tablewrap"><table class="years" data-slot="years"></table></div>
-  <h3>Every line, and what it is</h3>
-  <p class="hint">Change a category or amount if the reader got it wrong. Everything updates.</p>
-  <div class="tablewrap"><table class="lines" data-slot="lines"></table></div>
-  <h3>Ask the aid office</h3>
-  <div class="email" data-slot="email"></div>
+  <div class="tabpanel" role="tabpanel" data-slot="tab"></div>
 </template>
 
 <script type="module" src="js/app.js"></script>

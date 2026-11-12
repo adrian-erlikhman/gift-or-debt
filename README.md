@@ -47,7 +47,8 @@ npm test
 
 ```
 index.html        the page
-css/style.css
+css/style.css     the design: light canvas, green for gifts, red for debt, amber for jobs
+fonts/            Geist, Geist Mono and Shantell Sans (OFL), self-hosted so the page makes no third-party requests
 js/rules.js       federal rates, fees and limits
 js/parse.js       letter text -> line items, rules only
 js/money.js       net price, four years, interest, payments, ranking
@@ -55,7 +56,8 @@ js/flags.js       what the letter does that makes it look better than it is
 js/email.js       questions for the aid office
 js/ai.js          optional Claude reading and rewording, with checks
 js/samples.js     three fictional offers in three common layouts
-js/app.js         interface
+js/app.js         interface: the marked-up sample letter, the offer workspace, compare
+tools/og.html     source of og.png
 vendor/pdfjs      Mozilla pdf.js (Apache 2.0) for reading PDFs in the browser
 test/test.mjs     parser, math, flags, Claude-output checks
 ```

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>og card</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: radial-gradient(circle at 1px 1px, rgba(13,15,12,.07) 1px, transparent 1.4px) 0 0/22px 22px, var(--bg); }
+  .og { position: relative; display: grid; grid-template-columns: 1fr 470px; gap: 40px; align-items: center; padding: 56px 64px; height: 630px; box-sizing: border-box; }
+  .og h1 { font-size: 78px; line-height: .98; text-align: left; margin: 26px 0 0; max-width: none; }
+  .og .lede { margin: 26px 0 0; font-size: 22px; text-align: left; }
+  .og .brand { font-size: 26px; }
+  .og .mark { width: 34px; height: 34px; }
+  .og .card { background: #fff; border-radius: 22px; box-shadow: var(--shadow-lg); padding: 28px; }
+  .og .sbar { height: 62px; }
+  .og .sbar b { opacity: 1; font-size: 14px; }
+  .og .tr-rows li { opacity: 1; transform: none; }
+  .og .url { position: absolute; left: 64px; bottom: 44px; font: 15px var(--mono); color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="og">
+  <div>
+    <span class="brand"><svg class="mark" viewBox="0 0 32 32"><path d="M14.6 3.2a12.8 12.8 0 0 0 0 25.6z" class="mg"/><path d="M17.4 4.6a12.8 12.8 0 0 1 0 25.6z" class="md"/></svg><span>Gift <i>or</i> Debt</span></span>
+    <h1>Your aid letter calls loans <span class="circled">“aid.”<svg viewBox="0 0 300 120" preserveAspectRatio="none"><path pathLength="1" style="stroke-dashoffset:0;animation:none" d="M42 70 C 30 28, 120 10, 190 16 C 262 22, 292 52, 270 84 C 248 112, 140 116, 78 104 C 30 95, 12 62, 52 40"/></svg></span></h1>
+    <p class="lede">See what's a gift, what's debt, and what four years really cost.</p>
+  </div>
+  <div class="card">
+    <p class="mono label">Linden College says</p>
+    <div class="tr-big" style="font-size:44px;display:inline-block">$80,300<svg viewBox="0 0 100 18" preserveAspectRatio="none"><path pathLength="1" style="stroke-dashoffset:0" d="M2 11 C 30 6, 64 14, 98 7"/></svg></div>
+    <div class="tr-rule"></div>
+    <div class="sbar on"><span class="gift" style="--w:53.5%"><b>$43,000 gift</b></span><span class="loan" style="--w:6.8%"></span><span class="plus" style="--w:35.9%"><b>$28,800</b></span><span class="work" style="--w:3.7%"></span></div>
+    <ul class="tr-rows">
+      <li class="gift"><i style="background:var(--gift)"></i><span class="k">A gift</span><span class="v">$43,000</span></li>
+      <li class="debt"><i style="background:var(--debt)"></i><span class="k">Debt</span><span class="v">$34,300</span></li>
+      <li class="work"><i style="background:var(--work)"></i><span class="k">A job</span><span class="v">$3,000</span></li>
+    </ul>
+  </div>
+  <div class="url">adrian-erlikhman.github.io/gift-or-debt</div>
+</div>
+</body>
+</html>
