@@ -602,11 +602,13 @@ async function pdfText(file) {
   return out.join('\n');
 }
 
+// Opens the sample offers next to any letters already added, so a family can
+// compare its own offer with them; a sample already open is not added twice.
 function loadDemo(open = 0, scroll = false) {
-  state.letters = [];
-  for (const s of SAMPLES) addLetter(parseLetter(s.text, s.name), s.text);
+  open = Math.max(0, Math.min(SAMPLES.length - 1, Math.trunc(+open) || 0));
+  SAMPLES.forEach((s, i) => { if (!state.letters.some((l) => l.sample === i)) addLetter(parseLetter(s.text, s.name), s.text).sample = i; });
   const p = new URLSearchParams(location.search);
-  state.current = p.get('view') === 'compare' && !scroll ? 'compare' : open;
+  state.current = p.get('view') === 'compare' && !scroll ? 'compare' : state.letters.findIndex((l) => l.sample === open);
   state.tab = 'flags';
   render({ animate: true });
   if (scroll) $('#work').scrollIntoView({ behavior: 'smooth' });
@@ -622,7 +624,7 @@ addEventListener('resize', placeInk);
 
 const q = new URLSearchParams(location.search);
 if (q.get('demo') === '1') {
-  loadDemo(Math.min(2, +(q.get('offer') || 0)), false);
+  loadDemo(q.get('offer') || 0, false);
   if (q.get('tab') && ['flags', 'years', 'lines', 'email'].includes(q.get('tab'))) { state.tab = q.get('tab'); render({ animate: true }); }
 }
 window.GOD = { HERO, loadDemo, state, render };
