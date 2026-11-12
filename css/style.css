@@ -147,6 +147,8 @@ details.claude p { color: var(--ink-2); font-size: 14.5px; }
 .how h3 { margin-top: 6px; }
 .how p { color: var(--ink-2); }
 
+.compare th, .compare td { padding: 9px 7px; }
+.compare th { letter-spacing: 0.03em; }
 .compare table td.best { font-weight: 700; color: var(--gift); }
 .compare .verdict { font: 600 19px var(--serif); margin: 4px 0 14px; }
 
