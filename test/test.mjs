@@ -135,6 +135,33 @@ t('room numbers, addresses, ZIP codes and phone numbers are not money', () => {
   assert.equal(parseLetter('- Tuition 25,000.00\n• Hazel Scholarship 12,000.00').lines[1].label, 'Hazel Scholarship');
 });
 
+t('subtotals are set aside and not flagged as mismatches', () => {
+  const l = parseLetter('Maple University\nDirect Costs\nTuition $30,000\nHousing $10,000\nTotal Direct Costs $40,000\nIndirect Costs\nBooks $1,200\nTransportation $800\nIndirect costs $2,000\nTotal Cost of Attendance $42,000\nGift Aid\nMaple Grant $10,000\nPell Grant $5,000\nTotal Gift Aid $15,000\nLoans\nDirect Subsidized Loan $3,500\nDirect Unsubsidized Loan $2,000\nLoans $5,500\nWork-Study $2,000\nSelf-Help Total $7,500');
+  const r = analyze(l);
+  near(r.coa, 42000);
+  near(r.gift, 15000);
+  near(r.loans, 5500);
+  assert.equal(l.lines.filter((x) => x.total).length, 6);
+  assert.ok(!flagsFor(l, r).some((f) => /total on the letter/i.test(f.title)));
+});
+
+t('a "covers 100%" claim is checked against the loans', () => {
+  const { f } = run(1);
+  assert.match(f[0].detail, /"package that covers 100% of your direct costs"/);
+  assert.match(f[0].detail, /gift aid alone covers 54%/);
+  const none = parseLetter('Tuition $20,000\nGrant $20,000\nWe cover 100% of your need.');
+  assert.equal(none.claims.length, 1);
+  assert.ok(!flagsFor(none, analyze(none)).some((x) => /counts the loans/.test(x.detail)), 'no loans, nothing to call out');
+});
+
+t('a letter with aid but no costs gets one clear flag, and unread lines are listed', () => {
+  const l = parseLetter('Spruce College\nPell Grant $4,000\nDirect Unsubsidized Loan $2,000\nSmith Fund 1,500');
+  const f = flagsFor(l, analyze(l));
+  assert.ok(f.some((x) => x.title === 'No costs listed'));
+  assert.ok(!f.some((x) => /cover more than the bill/.test(x.title)));
+  assert.ok(f.some((x) => /isn't counted/.test(x.title) && /Smith Fund/.test(x.detail)));
+});
+
 t('years, GPAs and percentages are not money', () => {
   const l = parseLetter('Oak College\n2026-27 award, renew with GPA 3.0 and 12 credits\nTuition $40,000\n100% of need met');
   assert.equal(l.lines.length, 1);

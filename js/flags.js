@@ -11,7 +11,10 @@ export function flagsFor(letter, r) {
 
   if (r.loans > 0 && r.reportedAid > 0) {
     const pct = Math.round((r.loans / r.reportedAid) * 100);
-    add('warn', `${pct}% of the "aid" is debt`, `${usd(r.loans)} of the ${usd(r.reportedAid)} listed as aid is loans that someone repays with interest. Only ${usd(r.gift)} is free money.`, lines.filter((l) => l.category === 'loan').map((l) => l.id));
+    // "Covers 100% of your costs" only adds up with the loans counted in.
+    const claim = (letter.claims || [])[0];
+    const claimed = claim && r.coa > 0 ? ` The letter says "${claim}". That counts the loans${r.work ? ' and work-study' : ''}; gift aid alone covers ${Math.round((r.gift / r.coa) * 100)}% of the costs it lists.` : '';
+    add('warn', `${pct}% of the "aid" is debt`, `${usd(r.loans)} of the ${usd(r.reportedAid)} listed as aid is loans that someone repays with interest. Only ${usd(r.gift)} is free money.${claimed}`, lines.filter((l) => l.category === 'loan').map((l) => l.id));
   }
 
   if (r.loansBy.plus > 0) {
@@ -29,8 +32,8 @@ export function flagsFor(letter, r) {
 
   if (r.work > 0) add('info', 'Work-study is a job, not a discount', `${usd(r.work)} is paid as paychecks for hours worked during the year, if you find a work-study job. It can't pay the first bill.`, lines.filter((l) => l.category === 'work').map((l) => l.id));
 
-  if (r.counts.cost === 0) add('warn', 'No costs listed', 'The letter lists aid but no costs, so there is nothing to subtract it from. Add the cost of attendance from the school\'s website.');
-  else if (r.indirect === 0) add('warn', 'Only billed costs are listed', 'The letter shows tuition, fees or housing but no books, transportation or personal costs. Those are real and land on you. Add the school\'s published figures to see the full year.');
+  if (r.counts.cost === 0) add('warn', 'No costs listed', 'The letter lists aid but no costs, so there is nothing to subtract it from. Add the cost of attendance from the school\'s website under Every line.');
+  else if (r.indirect === 0) add('warn', 'Only billed costs are listed', 'The letter shows tuition, fees or housing but no books, transportation or personal costs. Those are real and land on you. Add the school\'s published figures under Every line to see the full year.');
 
   const firstYear = lines.filter((l) => l.category === 'gift' && l.firstYearOnly);
   if (firstYear.length) add('warn', 'Some aid is first-year only', `${firstYear.map((l) => l.label).join(', ')} won't come back after year one. The 4-year totals already drop it.`, firstYear.map((l) => l.id));
@@ -39,18 +42,23 @@ export function flagsFor(letter, r) {
     if (/GPA|grade point|\d\.\d/.test(c) && !/first|one[-\s]time|non[-\s]?renew/i.test(c)) add('info', 'Renewal has conditions', `"${c.slice(0, 220)}" If you miss it, that award stops and the gap grows.`);
   }
 
+  // A total has to equal something the lines add up to: the year, or one of
+  // the usual subtotals (billed costs, federal loans, loans plus work-study...).
   const totals = lines.filter((l) => l.total);
+  const candidates = [r.coa, r.direct, r.indirect, r.gift, r.reportedAid, r.netPrice, r.outOfPocket, r.loans, r.studentLoans, r.loansBy.sub + r.loansBy.unsub, r.work, r.loans + r.work, r.netPrice - r.work];
   for (const t of totals) {
-    const candidates = [r.coa, r.gift, r.reportedAid, r.netPrice, r.outOfPocket, r.loans];
     const close = candidates.some((c) => Math.abs(c - t.annual) <= 2);
     if (!close && t.annual > 0) add('info', 'A total on the letter doesn\'t match its lines', `"${t.label}" says ${usd(t.annual)}, but the lines add up differently. Check whether it counts loans as aid, or leaves costs out.`, [t.id]);
   }
 
   if (r.outOfPocket > 0) add('warn', `${usd(r.outOfPocket)} a year still isn't covered`, 'After gift aid, the loans offered and work-study, this is what the family still has to find each year.');
-  else if (r.outOfPocket < -50 && r.loans > 0) add('info', 'The loans cover more than the bill', `Aid exceeds the listed costs by ${usd(-r.outOfPocket)}. You don't have to take every loan offered; borrowing less saves interest.`);
+  else if (r.outOfPocket < -50 && r.loans > 0 && r.counts.cost > 0) add('info', 'The loans cover more than the bill', `Aid exceeds the listed costs by ${usd(-r.outOfPocket)}. You don't have to take every loan offered; borrowing less saves interest.`);
 
   const guessed = lines.filter((l) => l.guessed && l.category !== 'info');
   if (guessed.length) add('info', 'Some lines were guessed from their section', `Check: ${guessed.map((l) => `"${l.label}"`).join(', ')}.`, guessed.map((l) => l.id));
+
+  const unread = lines.filter((l) => l.guessed && l.category === 'info' && !l.total);
+  if (unread.length) add('info', unread.length === 1 ? 'One line isn\'t counted' : `${unread.length} lines aren't counted`, `The reader couldn't tell what ${unread.map((l) => `"${l.label}" (${usd(l.annual)})`).join(', ')} ${unread.length === 1 ? 'is' : 'are'}. If one is aid or a cost, set its category under Every line.`, unread.map((l) => l.id));
 
   return out;
 }

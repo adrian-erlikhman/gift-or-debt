@@ -38,11 +38,14 @@ const TERMS = /\b(fall|autumn|winter|spring|summer)\b/gi;
 const TOTAL_COLUMN = /\b(total|annual|yearly|full year|academic year)\b/i;
 const termsIn = (s) => (s.match(TERMS) || []).length;
 
+const GROUP = /^(your\s+|estimated\s+|annual\s+|federal\s+|student\s+|institutional\s+)*(direct\s+|indirect\s+|billed\s+|billable\s+|non[-\s]?billable\s+|other\s+)?(costs?|expenses|charges|aid|financial aid|gift aid|grants?( and scholarships?)?|scholarships?( and grants?)?|loans?|self[-\s]help( aid)?|awards?|package)$/i;
+
 const COST_HEADER = /\b(cost|costs|expenses|cost of attendance|budget|charges)\b/i;
 const AID_HEADER = /\b(aid|awards?|offer|package|financial aid|scholarships?|grants?)\b/i;
 const SCHOOL = /\b(university|college|institute|school|academy|polytechnic)\b/i;
 
-const RENEW_BAD = /\b(first[-\s]year only|freshman year only|first year only|one[-\s]time|non[-\s]?renewable|not renewable|entering (year|students?) only|year one only)\b/i;
+const CLAIM = /\b100\s?%\s*(of\s+)?(your\s+)?(demonstrated\s+|financial\s+|direct\s+)?(need|costs?|tuition|expenses)|\b(covers?|covered|meets?|met)\s+(100\s?%|all|the full|your full|full)\b|\bfully\s+(covers?|covered|meets?|met|funded)\b|\bfull (demonstrated |financial )?need\b/i;
+const RENEW_BAD =/\b(first[-\s]year only|freshman year only|first year only|one[-\s]time|non[-\s]?renewable|not renewable|entering (year|students?) only|year one only)\b/i;
 const RENEW_GPA = /\b(renew\w*|maintain\w*|keep)\b[^.\n]{0,80}\b(GPA|grade point|\d\.\d{1,2})\b|\b(GPA|grade point average)\b[^.\n]{0,60}\b(renew|maintain|keep|required)/i;
 
 // "MESA RIDGE UNIVERSITY" reads as shouting; keep "of", "and" small.
@@ -217,6 +220,19 @@ export function parseLetter(text, fallbackName = 'School') {
     });
   }
 
+  // A subtotal without the word "total" ("Direct costs $40,000", "Loans
+  // $5,500"): a group name whose amount is the sum of the lines just above it.
+  for (let i = 2; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.total || !GROUP.test(l.label.replace(/[*:.\s]+$/, ''))) continue;
+    let sum = 0, n = 0;
+    for (let k = i - 1; k >= 0 && !lines[k].total; k--) {
+      if (lines[k].category === 'info') continue;
+      sum += lines[k].annual; n++;
+      if (n >= 2 && Math.abs(sum - l.annual) <= 2) { Object.assign(l, { category: 'info', kind: null, direct: null, total: true, guessed: false }); break; }
+    }
+  }
+
   // Renewal language often sits in a footnote, not on the award's own line.
   const sentences = String(text).split(/(?<=[.!?])\s+|\n/);
   const conditions = sentences.map((s) => s.trim()).filter((s) => RENEW_GPA.test(s) || RENEW_BAD.test(s));
@@ -228,7 +244,12 @@ export function parseLetter(text, fallbackName = 'School') {
       if (words.some((w) => s.toLowerCase().includes(w))) line.firstYearOnly = true;
     }
   }
+  // "covers 100% of your costs", "we meet your full need": checked against the
+  // loans in the flags.
+  const claims = sentences
+    .filter((s) => CLAIM.test(s))
+    .map((s) => (s.match(/(?<!\S)(?:\S+\s+){0,3}\S*?(?:100\s?%|fully|full|all of)[^,.;!?]*/i) || [s])[0].trim().slice(0, 140));
   if (letterPeriod.times > 1) notes.push(`The letter says its amounts are ${letterPeriod.note.split(',')[0]}; they were annualized.`);
 
-  return { school: tidyName(school) || fallbackName, named: !!school, lines, conditions, notes };
+  return { school: tidyName(school) || fallbackName, named: !!school, lines, conditions, claims, notes };
 }
