@@ -126,10 +126,13 @@ export function trueCost(r) {
 }
 
 // Each entry keeps `i`, its position in `results`, so two offers from the same
-// school (a first offer and a revised one) stay apart.
+// school (a first offer and a revised one) stay apart. An offer that lists no
+// costs has no true cost yet: it goes last, unranked (`score` null).
 export function compare(results) {
-  const score = trueCost;
+  const score = (r) => (r.coa > 0 ? trueCost(r) : Infinity);
   const ranked = results.map((r, i) => ({ r, i })).sort((a, b) => score(a.r) - score(b.r));
   const best = ranked[0].r;
-  return ranked.map(({ r, i }) => ({ i, school: r.school, score: r2(score(r)), moreThanBest: r2(score(r) - score(best)) }));
+  return ranked.map(({ r, i }) => (r.coa > 0
+    ? { i, school: r.school, score: r2(score(r)), moreThanBest: r2(score(r) - score(best)) }
+    : { i, school: r.school, score: null, moreThanBest: null }));
 }

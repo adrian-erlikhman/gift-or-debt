@@ -411,30 +411,40 @@ function renderCompare(animate) {
   const rs = state.letters.map(resultFor);
   const names = displayNames();
   const ranked = compare(rs);
-  const max = Math.max(1, ...rs.map(trueCost));
-  const best = ranked[0], second = ranked[1], last = ranked[ranked.length - 1];
-  const min = (f) => Math.min(...rs.map(f));
-  const cell = (r, f) => `<td class="num${f(r) === min(f) ? ' best' : ''}">${usd(f(r))}</td>`;
+  // Offers with no costs listed can't be ranked; they sit at the bottom.
+  const costed = ranked.filter((x) => x.score !== null);
+  const costedRs = rs.filter((r) => r.coa > 0);
+  const max = Math.max(1, ...costedRs.map(trueCost));
+  const best = costed[0], second = costed[1], last = costed[costed.length - 1];
+  const min = (f) => Math.min(...costedRs.map(f));
+  const cell = (r, f) => (r.coa > 0 ? `<td class="num${f(r) === min(f) ? ' best' : ''}">${usd(f(r))}</td>` : '<td class="num">—</td>');
   const panel = $('#panel');
-  const verdict = last.moreThanBest < 1
-    ? `These offers cost the same over four years: ${usd(best.score)}.`
-    : `<b>${esc(names[best.i])}</b> costs the least over four years: <span class="g">${usd(last.moreThanBest)} less</span> than ${esc(names[last.i])}${second && second !== last ? ` and ${usd(second.moreThanBest)} less than ${esc(names[second.i])}` : ''}.`;
+  const missing = ranked.filter((x) => x.score === null).map((x) => esc(names[x.i]));
+  const verdict = costed.length < 2
+    ? `${costed.length ? `Only <b>${esc(names[best.i])}</b> lists its costs.` : 'None of these offers lists its costs.'} Add the cost of attendance to ${missing.join(' and ')} under Every line to compare them.`
+    : (last.moreThanBest < 1
+      ? `These offers cost the same over four years: ${usd(best.score)}.`
+      : `<b>${esc(names[best.i])}</b> costs the least over four years: <span class="g">${usd(last.moreThanBest)} less</span> than ${esc(names[last.i])}${second && second !== last ? ` and ${usd(second.moreThanBest)} less than ${esc(names[second.i])}` : ''}.`)
+      + (missing.length ? ` ${missing.join(' and ')} ${missing.length === 1 ? 'lists' : 'list'} no costs, so ${missing.length === 1 ? 'it is' : 'they are'} not ranked.` : '');
   panel.innerHTML = `<div class="cmp">
     <p class="mono dim meta">${rs.length} offers · ranked by four-year true cost</p>
     <h2>Compare offers</h2>
     <p class="verdict on">${verdict}</p>
-    <div class="race${animate && !reduced ? ' anim' : ''}">${ranked.map(({ i: k }, i) => {
+    <div class="race${animate && !reduced ? ' anim' : ''}">${ranked.map(({ i: k, score }, i) => {
       const r = rs[k];
+      if (score === null) return `<div class="race-row"><div class="nm">${esc(names[k])}<small>no costs listed</small></div><div class="tk"></div><div class="v">—</div></div>`;
       const tc = trueCost(r), extra = r.debt.interestInSchool + r.fourYear.fees;
       const w = Math.max(0, (tc / max) * 78);
-      return `<div class="race-row${i === 0 ? ' best' : ''}"><div class="nm">${esc(names[k])}<small>${usd(r.netPrice)} net price / year</small></div><div class="tk"><div class="fill" style="--w:${w}%;animation-delay:${i * 150}ms"><i class="np" style="width:${tc > 0 ? ((tc - extra) / tc) * 100 : 0}%"></i><i class="it" style="width:${tc > 0 ? (extra / tc) * 100 : 0}%"></i></div>${i === 0 ? `<span class="stamp" style="--w:${w}%">lowest true cost</span>` : ''}</div><div class="v" data-to="${Math.round(tc)}" data-delay="${i * 150}">${usd(tc)}</div></div>`;
+      const top = i === 0 && costed.length > 1;
+      return `<div class="race-row${top ? ' best' : ''}"><div class="nm">${esc(names[k])}<small>${usd(r.netPrice)} net price / year</small></div><div class="tk"><div class="fill" style="--w:${w}%;animation-delay:${i * 150}ms"><i class="np" style="width:${tc > 0 ? ((tc - extra) / tc) * 100 : 0}%"></i><i class="it" style="width:${tc > 0 ? (extra / tc) * 100 : 0}%"></i></div>${top ? `<span class="stamp" style="--w:${w}%">lowest true cost</span>` : ''}</div><div class="v" data-to="${Math.round(tc)}" data-delay="${i * 150}">${usd(tc)}</div></div>`;
     }).join('')}</div>
     <div class="race-key"><span><i style="background:var(--ink)"></i>Four years of net price</span><span><i style="background:var(--debt)"></i>Loan fees and interest while in school</span></div>
     <div class="tablewrap"><table><thead><tr><th>School</th><th class="num">4-year true cost</th><th class="num">Gift aid / year</th><th class="num">Net price / year</th><th class="num">Not covered / year</th><th class="num">Student debt at graduation</th><th class="num">Monthly payment</th><th class="num">Parent PLUS at graduation</th><th class="num">Flags</th></tr></thead><tbody>
     ${ranked.map(({ i: k }) => {
       const r = rs[k];
       const warns = flagsFor(state.letters[k], r).filter((f) => f.level === 'warn').length;
-      return `<tr><td>${esc(names[k])}</td>${cell(r, trueCost)}<td class="num${r.gift === Math.max(...rs.map((x) => x.gift)) ? ' best' : ''}">${usd(r.gift)}</td>${cell(r, (x) => x.netPrice)}${cell(r, (x) => Math.max(0, x.outOfPocket))}${cell(r, (x) => x.debt.studentAtRepayment)}${cell(r, (x) => x.debt.studentMonthly)}${cell(r, (x) => x.debt.parentAtRepayment)}<td class="num">${warns}</td></tr>`;
+      const all = (f) => `<td class="num${f(r) === Math.min(...rs.map(f)) ? ' best' : ''}">${usd(f(r))}</td>`; // figures that don't need costs
+      return `<tr><td>${esc(names[k])}</td>${cell(r, trueCost)}<td class="num${r.gift === Math.max(...rs.map((x) => x.gift)) ? ' best' : ''}">${usd(r.gift)}</td>${cell(r, (x) => x.netPrice)}${cell(r, (x) => Math.max(0, x.outOfPocket))}${all((x) => x.debt.studentAtRepayment)}${all((x) => x.debt.studentMonthly)}${all((x) => x.debt.parentAtRepayment)}<td class="num">${warns}</td></tr>`;
     }).join('')}
     </tbody></table></div>
     <p class="fine">“True cost” is four years of net price plus loan fees and the interest that builds while you're in school. The best figure in each column is green: the most gift aid, the lowest of everything else.</p>
