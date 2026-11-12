@@ -221,6 +221,8 @@ t('the email asks about what the letter actually does', () => {
   assert.match(body, /books, transportation/);
   assert.match(body, /\$28,800/);
   assert.doesNotMatch(body, /private or institutional/);
+  const unnamed = parseLetter('Tuition $30,000\nGrant $10,000', 'School 4');
+  assert.match(draftEmail(unnamed, analyze(unnamed)).body, /^Dear Financial Aid Office,/);
 });
 
 console.log(`${passed} tests passed`);

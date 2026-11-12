@@ -20,7 +20,7 @@ export function draftEmail(letter, r) {
   qs.push('Do these amounts stay the same each year if my family\'s finances stay the same?');
 
   const body = [
-    `Dear ${letter.school} Financial Aid Office,`,
+    `Dear ${officeName(letter)},`,
     '',
     `Thank you for my financial aid offer. Before I decide, I want to make sure I understand it. I have a few questions:`,
     '',
@@ -32,4 +32,10 @@ export function draftEmail(letter, r) {
     '[Student ID]',
   ].join('\n');
   return { subject: `Questions about my 2026–27 financial aid offer`, body };
+}
+
+// "Linden College Financial Aid Office", or just "Financial Aid Office" when
+// the letter didn't name the school (not "School 1 Financial Aid Office").
+export function officeName(letter) {
+  return letter.named === false ? 'Financial Aid Office' : `${letter.school} Financial Aid Office`;
 }

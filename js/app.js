@@ -1,7 +1,7 @@
 import { parseLetter } from './parse.js';
 import { analyze, compare, trueCost, DEFAULTS } from './money.js';
 import { flagsFor } from './flags.js';
-import { draftEmail } from './email.js';
+import { draftEmail, officeName } from './email.js';
 import { SAMPLES } from './samples.js';
 import { LOAN_KIND, RULES } from './rules.js';
 import { MODELS, readWithClaude, polishEmail } from './ai.js';
@@ -395,7 +395,7 @@ function tabLines(letter, r, flags) {
 
 function tabEmail(letter, r) {
   const draft = draftEmail(letter, r);
-  return `<div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>New message</span></div><div class="mail-f"><span>To</span><span>${esc(letter.school)} Financial Aid Office</span></div><div class="mail-f"><span>Subject</span><span>${esc(draft.subject)}</span></div><textarea aria-label="Email to the aid office">${esc(draft.body)}</textarea><div class="mail-foot"><button class="btn dark sm" data-act="copy">Copy email</button><button class="btn sm" data-act="polish" ${state.key ? '' : 'disabled title="Add an API key under “Use Claude” first"'}>Reword with Claude</button><span class="status" data-slot="emailStatus" role="status"></span></div></div><p class="fine">Built from what this letter does. Every question points at a line or a gap in it.</p>`;
+  return `<div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>New message</span></div><div class="mail-f"><span>To</span><span>${esc(officeName(letter))}</span></div><div class="mail-f"><span>Subject</span><span>${esc(draft.subject)}</span></div><textarea aria-label="Email to the aid office">${esc(draft.body)}</textarea><div class="mail-foot"><button class="btn dark sm" data-act="copy">Copy email</button><button class="btn sm" data-act="polish" ${state.key ? '' : 'disabled title="Add an API key under “Use Claude” first"'}>Reword with Claude</button><span class="status" data-slot="emailStatus" role="status"></span></div></div><p class="fine">Built from what this letter does. Every question points at a line or a gap in it.</p>`;
 }
 
 // ---------- compare ----------
@@ -609,7 +609,7 @@ $('#readRules').addEventListener('click', () => {
   const text = $('#letterText').value.trim();
   if (!text) return status('Paste the letter text first.', true);
   const parsed = parseLetter(text, $('#schoolName').value.trim() || `School ${state.letters.length + 1}`);
-  if ($('#schoolName').value.trim()) parsed.school = $('#schoolName').value.trim();
+  if ($('#schoolName').value.trim()) { parsed.school = $('#schoolName').value.trim(); parsed.named = true; }
   if (!parsed.lines.length) return status('No dollar amounts found. Is this the aid letter?', true);
   addLetter(parsed, text);
   status(`Read ${parsed.lines.length} lines from ${parsed.school}.`);
@@ -627,7 +627,7 @@ $('#readClaude').addEventListener('click', async () => {
   try {
     const out = await readWithClaude({ key: state.key, model: state.model, text, image: pendingImage });
     if (!out.lines.length) return status('Claude found no amounts it could match to the letter.', true);
-    const parsed = { school: $('#schoolName').value.trim() || out.school || `School ${state.letters.length + 1}`, lines: out.lines, conditions: out.conditions, notes: [] };
+    const parsed = { school: $('#schoolName').value.trim() || out.school || `School ${state.letters.length + 1}`, named: !!($('#schoolName').value.trim() || out.school), lines: out.lines, conditions: out.conditions, claims: text ? parseLetter(text).claims : [], notes: [] };
     addLetter(parsed, text, 'claude');
     status(`Claude read ${out.lines.length} lines${out.dropped.length ? `; ${out.dropped.length} were dropped because their amounts aren't in the letter` : ''}${pendingImage ? '. From a photo, so check each one.' : '.'}`);
     pendingImage = null; $('#fileIn').value = ''; $('#letterText').value = ''; $('#schoolName').value = '';
