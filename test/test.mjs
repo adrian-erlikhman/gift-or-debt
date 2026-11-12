@@ -113,6 +113,11 @@ t('Fall and Spring columns with no Total column are added, even when equal', () 
   near(r.loansBy.sub, 3500);
 });
 
+t('Offered and Accepted columns next to Fall and Spring are not added up', () => {
+  const r = analyze(parseLetter('Award             Offered   Accepted   Fall   Spring\nFederal Pell Grant  $7,395  $7,395\nTuition $20,000'));
+  near(r.gift, 7395);
+});
+
 t('three quarter columns are added; a line can name its own terms', () => {
   const q = analyze(parseLetter('Coast University\nCost              Fall     Winter   Spring\nTuition           $5,000   $5,000   $5,000\nUniversity Grant  $2,000   $2,000   $2,000'));
   near(q.coa, 15000);

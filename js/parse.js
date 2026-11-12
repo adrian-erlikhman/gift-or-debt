@@ -35,7 +35,9 @@ const PER_MONTH = /\b(per|a|each)\s+month\b|\/\s?mo(nth)?\b|\bmonthly\b/i;
 // Term columns: a header row like "Fall  Spring  Total", or a line that names
 // its own terms ("Fall 2026 $9,000 / Spring 2027 $9,000").
 const TERMS = /\b(fall|autumn|winter|spring|summer)\b/gi;
-const TOTAL_COLUMN = /\b(total|annual|yearly|full year|academic year)\b/i;
+// Any other amount column (a total, or a portal's Offered and Accepted) means
+// two equal numbers on a line are not simply fall plus spring.
+const TOTAL_COLUMN = /\b(total|annual|yearly|full year|academic year|offered|accepted|amount)\b/i;
 const termsIn = (s) => (s.match(TERMS) || []).length;
 
 const GROUP = /^(your\s+|estimated\s+|annual\s+|federal\s+|student\s+|institutional\s+)*(direct\s+|indirect\s+|billed\s+|billable\s+|non[-\s]?billable\s+|other\s+)?(costs?|expenses|charges|aid|financial aid|gift aid|grants?( and scholarships?)?|scholarships?( and grants?)?|loans?|self[-\s]help( aid)?|awards?|package)$/i;
