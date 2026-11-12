@@ -397,6 +397,7 @@ tr.total td { color: var(--muted); }
 .race-key { display: flex; gap: 18px; font-size: 13px; color: var(--muted); margin: -10px 0 20px; }
 .race-key span { display: inline-flex; align-items: center; gap: 6px; }
 .race-key i { width: 10px; height: 10px; border-radius: 3px; }
+.cmp th, .cmp td { padding: 9px 7px; }
 .cmp td.best { font-weight: 700; color: var(--gift-ink); }
 .cmp-bars { display: grid; gap: 18px; margin-top: 26px; }
 .cmp-bars h3 { font-size: 17px; letter-spacing: -.01em; margin-bottom: 8px; }
