@@ -150,6 +150,40 @@ t('subtotals are set aside and not flagged as mismatches', () => {
   assert.ok(!flagsFor(l, r).some((f) => /total on the letter/i.test(f.title)));
 });
 
+t('a College Financing Plan-style list', () => {
+  const l = parseLetter(`University of Example
+College Financing Plan 2026-27
+Cost of Attendance (per year)
+Tuition and fees $15,000
+Housing and meals $12,000
+Books, course materials, supplies, and equipment $1,200
+Transportation $900
+Other education costs $1,500
+Estimated Cost of Attendance $30,600 / yr
+Grants and scholarships to pay for college
+Grants from your school $8,000
+Federal Pell Grant $5,000
+Grants from your state $3,000
+Total Grants and Scholarships ("Gift" Aid; no repayment needed) $16,000
+What will you pay for college
+Net Costs (Cost of attendance minus total grants and scholarships) $14,600 / yr
+Options to pay net costs
+Work-Study (Federal, state, or institutional) $2,500
+Federal Direct Subsidized Loan $3,500
+Federal Direct Unsubsidized Loan $2,000
+Parent PLUS loans $6,000`);
+  const r = analyze(l);
+  assert.equal(l.school, 'University of Example');
+  near(r.coa, 30600);
+  near(r.indirect, 3600);
+  near(r.gift, 16000);
+  near(r.work, 2500);
+  near(r.loansBy.plus, 6000);
+  near(r.outOfPocket, 600);
+  assert.ok(!l.lines.some((x) => x.guessed && x.category !== 'cost'));
+  assert.ok(!flagsFor(l, r).some((f) => /total on the letter/i.test(f.title)));
+});
+
 t('a "covers 100%" claim is checked against the loans', () => {
   const { f } = run(1);
   assert.match(f[0].detail, /"package that covers 100% of your direct costs"/);
