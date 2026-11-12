@@ -364,6 +364,14 @@ tr.total td { color: var(--muted); }
 .pill { display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 4px 6px; border-radius: 5px; background: var(--work-hi); color: var(--work-ink); margin-left: 8px; vertical-align: 2px; }
 .pill.claude { background: #ece6ff; color: #4b2fa8; }
 .lines.anim .ln { animation: slidein .5s var(--ease) backwards; }
+.addline { display: grid; grid-template-columns: minmax(0, 1fr) 210px 118px auto; gap: 10px 14px; align-items: center; margin-top: 12px; padding: 12px 12px 12px 20px; border: 1.5px dashed var(--line-2); border-radius: 12px; }
+.addline .label { grid-column: 1 / -1; margin: 0; }
+.addline input, .addline select { width: 100%; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px; background: #fff; font-size: 14px; }
+.addline input[name=amt] { text-align: right; font-family: var(--mono); }
+.addline .status { grid-column: 1 / -1; }
+.addline .status:empty { display: none; }
+.tablink { border: 0; padding: 0; background: none; font: inherit; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.tablink:hover { color: var(--focus); }
 
 /* email */
 .mail { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fff; box-shadow: var(--shadow); }
@@ -488,6 +496,9 @@ tr.total td { color: var(--muted); }
   .steps { grid-template-columns: 1fr; }
   .ln { grid-template-columns: 6px minmax(0, 1fr); }
   .ln select, .ln input { grid-column: 2; }
+  .addline { grid-template-columns: minmax(0, 1fr) 110px; }
+  .addline input[name=label] { grid-column: 1 / -1; }
+  .addline button { grid-column: 1 / -1; }
   .race-row { grid-template-columns: 1fr; gap: 6px; }
   .race-row .v { text-align: left; }
   .debtline { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -244,13 +244,15 @@ const kpi = (cls, k, v, s = '') => `<div class="kpi ${cls}"><div class="k">${k}<
 
 function verdictHTML(r) {
   const parts = [];
-  if (r.loans > 0 || r.work > 0) {
+  if (r.reportedAid === 0) parts.push('The letter lists no aid.');
+  else if (r.loans > 0 || r.work > 0) {
     parts.push(`The letter lists <b>${usd(r.reportedAid)}</b> in aid.`);
     parts.push(`<span class="g">${usd(r.gift)} is a gift.</span>`);
     if (r.loans > 0) parts.push(`<span class="r">${usd(r.loans)} is debt</span>${r.loansBy.plus ? `, and ${usd(r.loansBy.plus)} of that is borrowed by a parent.` : '.'}`);
     if (r.work > 0) parts.push(`<span class="a">${usd(r.work)} is a job.</span>`);
   } else parts.push(`All <span class="g">${usd(r.gift)}</span> of the aid listed is a gift.`);
-  if (r.outOfPocket > 0) parts.push(`${usd(r.outOfPocket)} a year still isn't covered.`);
+  if (r.coa === 0) parts.push('It lists no costs, so there is no net price yet: add the cost of attendance under <b>Every line</b>.');
+  else if (r.outOfPocket > 0) parts.push(`${usd(r.outOfPocket)} a year still isn't covered.`);
   return parts.join(' ');
 }
 
@@ -274,7 +276,7 @@ function renderLetter(i, animate) {
   const d = r.debt;
   const kp = $('[data-slot=kpis]', panel);
   kp.innerHTML = [
-    kpi('gift', 'Free money this year', r.gift, `${Math.round(r.giftShare * 100)}% of the ${usd(r.reportedAid)} called “aid”`),
+    kpi('gift', 'Free money this year', r.gift, r.reportedAid ? `${Math.round(r.giftShare * 100)}% of the ${usd(r.reportedAid)} called “aid”` : 'no aid listed'),
     kpi('debt', 'Loans offered this year', r.loans, r.loansBy.plus ? `${usd(r.loansBy.plus)} of it borrowed by a parent` : 'repaid with interest'),
     kpi('', 'Net price this year', r.netPrice, 'cost of attendance minus gift aid'),
     kpi('work', 'Still not covered', Math.max(0, r.outOfPocket), 'after grants, loans and work-study'),
@@ -319,21 +321,29 @@ function placeInk() {
   ink.style.setProperty('--w', sel.offsetWidth + 'px');
 }
 
+// "under Every line" in a flag is a link to that tab.
+const toLines = (s) => s.replace('Every line', '<button type="button" class="tablink" data-goto="lines">Every line</button>');
+
 function tabFlags(letter, r, flags) {
   return flags.length
-    ? `<ul class="flags anim-on">${flags.map((f, i) => `<li class="${f.level}" style="animation-delay:${i * 70}ms"><div><b>${esc(f.title)}</b><span>${esc(f.detail)}</span></div></li>`).join('')}</ul>`
+    ? `<ul class="flags anim-on">${flags.map((f, i) => `<li class="${f.level}" style="animation-delay:${i * 70}ms"><div><b>${esc(f.title)}</b><span>${toLines(esc(f.detail))}</span></div></li>`).join('')}</ul>`
     : '<ul class="flags"><li class="none"><div><b>Nothing tricky found</b><span>Still check the numbers against the letter.</span></div></li></ul>';
 }
 
 function tabYears(letter, r) {
   const ys = r.perYear;
   const W = 760, H = 300, L = 62, B = 34, T = 26;
-  const top = Math.max(...ys.map((y) => Math.max(y.cost, y.gift + y.loans + y.work))) * 1.08;
+  const top = Math.max(1000, ...ys.map((y) => Math.max(y.cost, y.gift + y.loans + y.work))) * 1.08;
   const yv = (v) => H - B - (v / top) * (H - B - T);
   const colW = 92, gap = (W - L - colW * 4) / 4;
-  const step = top > 150000 ? 50000 : top > 60000 ? 25000 : 10000;
+  let step = top > 150000 ? 50000 : top > 60000 ? 25000 : 10000;
+  if (top / step > 8 || top / step < 2) { // very large or very small offers: 3 to 6 gridlines
+    const p = Math.pow(10, Math.floor(Math.log10(top / 4)));
+    step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => top / s <= 6);
+  }
+  const tick = (v) => (!v ? '$0' : v >= 1e6 ? `$${+(v / 1e6).toFixed(2)}M` : v >= 1000 ? `$${+(v / 1000).toFixed(1)}k` : `$${v}`);
   let g = '';
-  for (let v = 0; v <= top; v += step) g += `<line x1="${L}" x2="${W}" y1="${yv(v)}" y2="${yv(v)}" stroke="#e4e4de"/><text x="${L - 10}" y="${yv(v) + 4}" text-anchor="end">${v ? '$' + v / 1000 + 'k' : '$0'}</text>`;
+  for (let v = 0; v <= top; v += step) g += `<line x1="${L}" x2="${W}" y1="${yv(v)}" y2="${yv(v)}" stroke="#e4e4de"/><text x="${L - 10}" y="${yv(v) + 4}" text-anchor="end">${tick(v)}</text>`;
   ys.forEach((y, i) => {
     const x = L + gap / 2 + i * (colW + gap);
     let acc = 0;
@@ -358,14 +368,28 @@ function tabYears(letter, r) {
   return `<div class="yrs-wrap">${chart}<ul class="legend">${key.map(([c, t]) => `<li><i style="background:${c}"></i>${t}</li>`).join('')}</ul>${debtline}<details class="nums"><summary>Show the numbers</summary><div class="tablewrap">${table}</div></details><p class="fine" style="margin:0">Costs grow ${(state.opts.costGrowth * 100).toFixed(1)}% a year. First-year-only awards drop off after year one. Borrowing repeats each year. Change any of this under Assumptions.</p></div>`;
 }
 
+const LINE_OPTS = [['gift', 'Gift aid'], ['loan:sub', LOAN_KIND.sub], ['loan:unsub', LOAN_KIND.unsub], ['loan:plus', LOAN_KIND.plus], ['loan:private', LOAN_KIND.private], ['work', 'Work-study'], ['cost:direct', 'Cost (billed)'], ['cost:indirect', 'Cost (not billed)'], ['total', 'A total (not counted)'], ['info', 'Not counted']];
+const optionsHTML = (selected) => LINE_OPTS.map(([v, t]) => `<option value="${v}"${v === selected ? ' selected' : ''}>${t}</option>`).join('');
+function setCategory(l, value) {
+  const [cat, sub] = value.split(':');
+  l.total = cat === 'total';
+  l.category = l.total ? 'info' : cat;
+  l.kind = cat === 'loan' ? sub : null;
+  l.direct = cat === 'cost' ? sub === 'direct' : null;
+  l.guessed = false;
+}
+
 function tabLines(letter, r, flags) {
   const flagged = new Set(flags.flatMap((f) => f.lineIds));
-  const opts = [['gift', 'Gift aid'], ['loan:sub', LOAN_KIND.sub], ['loan:unsub', LOAN_KIND.unsub], ['loan:plus', LOAN_KIND.plus], ['loan:private', LOAN_KIND.private], ['work', 'Work-study'], ['cost:direct', 'Cost (billed)'], ['cost:indirect', 'Cost (not billed)'], ['total', 'A total (not counted)'], ['info', 'Not counted']];
   const cur = (l) => (l.category === 'loan' ? `loan:${l.kind}` : l.category === 'cost' ? `cost:${l.direct === false ? 'indirect' : 'direct'}` : l.total ? 'total' : l.category);
   const cls = (l) => (l.total ? 'total' : l.category === 'loan' ? (l.kind === 'plus' ? 'plus' : 'loan') : l.category);
+  // A letter that leaves out costs needs them added: suggest the missing kind.
+  const next = r.counts.cost === 0 ? 'cost:direct' : r.indirect === 0 ? 'cost:indirect' : 'gift';
+  const hint = r.counts.cost === 0 ? 'Cost of attendance, from the school’s website' : r.indirect === 0 ? 'Books, transportation, personal costs' : 'Label';
   return `<p class="hint" style="margin:0 0 14px">Every line keeps the words it came from. If the reader got one wrong, change it; everything updates.</p><div class="lines anim-on">${letter.lines
-    .map((l, j) => `<div class="ln ${cls(l)}${flagged.has(l.id) ? ' flagged' : ''}" style="animation-delay:${j * 35}ms"><i></i><div><span class="lbl">${esc(l.label)}</span>${l.firstYearOnly ? '<span class="pill">first year only</span>' : ''}${l.readBy === 'claude' ? '<span class="pill claude">read by Claude</span>' : ''}<span class="src" title="${esc(l.source)}">${esc(l.source)}${l.how ? ' · ' + esc(l.how) : ''}</span></div><select data-j="${j}" aria-label="Category for ${esc(l.label)}">${opts.map(([v, t]) => `<option value="${v}"${v === cur(l) ? ' selected' : ''}>${t}</option>`).join('')}</select><input data-j="${j}" type="number" min="0" step="1" value="${l.annual}" aria-label="Amount per year for ${esc(l.label)}"></div>`)
-    .join('')}</div>`;
+    .map((l, j) => `<div class="ln ${cls(l)}${flagged.has(l.id) ? ' flagged' : ''}" style="animation-delay:${j * 35}ms"><i></i><div><span class="lbl">${esc(l.label)}</span>${l.firstYearOnly ? '<span class="pill">first year only</span>' : ''}${l.readBy === 'claude' ? '<span class="pill claude">read by Claude</span>' : ''}<span class="src" title="${esc(l.source)}">${esc(l.source)}${l.how ? ' · ' + esc(l.how) : ''}</span></div><select data-j="${j}" aria-label="Category for ${esc(l.label)}">${optionsHTML(cur(l))}</select><input data-j="${j}" type="number" min="0" step="1" value="${l.annual}" aria-label="Amount per year for ${esc(l.label)}"></div>`)
+    .join('')}</div>
+    <form class="addline" novalidate><span class="mono label">Add a line the letter left out</span><input name="label" type="text" autocomplete="off" placeholder="${hint}" aria-label="Label for the new line"><select name="cat" aria-label="Category for the new line">${optionsHTML(next)}</select><input name="amt" type="number" min="0" step="1" inputmode="decimal" placeholder="Per year" aria-label="Amount per year for the new line"><button class="btn sm dark" type="submit">Add</button><span class="status" role="status"></span></form>`;
 }
 
 function tabEmail(letter, r) {
@@ -462,6 +486,7 @@ document.addEventListener('click', async (e) => {
     renderTab(l, r, flagsFor(l, r), true);
     return;
   }
+  if (b.dataset.goto) { $(`#panel .tabs [data-tab="${b.dataset.goto}"]`)?.click(); $('#panel .addline input')?.focus(); return; }
   if (b.id === 'showCompare') { state.current = 'compare'; show(() => render()); $('#work').scrollIntoView({ behavior: 'smooth' }); return; }
   if (b.id === 'addLetter') { $('#paste').scrollIntoView({ behavior: 'smooth' }); $('#letterText').focus({ preventScroll: true }); return; }
   const act = b.dataset.act;
@@ -489,16 +514,29 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Add a line the letter left out (the cost of attendance, books, an award).
+document.addEventListener('submit', (e) => {
+  const f = e.target.closest('.addline');
+  if (!f) return;
+  e.preventDefault();
+  const el = f.elements;
+  const amt = Number(el.amt.value);
+  const st = $('.status', f);
+  if (!(amt > 0)) { st.textContent = 'Enter an amount per year.'; st.className = 'status err'; el.amt.focus(); return; }
+  const letter = state.letters[state.current];
+  const label = el.label.value.trim() || LINE_OPTS.find(([v]) => v === el.cat.value)[1];
+  const line = { id: `U${letter.lines.length + 1}`, source: 'Added by you', label, annual: Math.round(amt * 100) / 100, how: '', firstYearOnly: false };
+  setCategory(line, el.cat.value);
+  letter.lines.push(line);
+  render({ animate: false });
+  const nf = $('#panel .addline');
+  if (nf) { $('.status', nf).textContent = `Added ${label}, ${usd(line.annual)} a year.`; nf.elements.label.focus({ preventScroll: true }); }
+});
+
 document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.matches('.ln select')) {
-    const l = state.letters[state.current].lines[+t.dataset.j];
-    const [cat, sub] = t.value.split(':');
-    l.total = cat === 'total';
-    l.category = l.total ? 'info' : cat;
-    l.kind = cat === 'loan' ? sub : null;
-    l.direct = cat === 'cost' ? sub === 'direct' : null;
-    l.guessed = false;
+    setCategory(state.letters[state.current].lines[+t.dataset.j], t.value);
     render({ animate: false });
   }
   if (t.matches('.ln input')) {
