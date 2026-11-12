@@ -44,7 +44,7 @@
     </div>
     <p class="trust mono"><span>Runs in your browser</span><span>No account</span><span>Nothing you paste leaves the page</span></p>
 
-    <div class="stage" id="stage" aria-label="A sample offer, marked up: Linden College lists $80,300 in aid; $43,000 is a gift and $34,300 is debt.">
+    <div class="stage" id="stage" role="figure" aria-label="A sample offer, marked up: Linden College lists $80,300 in aid; $43,000 is a gift and $34,300 is debt.">
       <div class="letter" id="heroLetter" aria-hidden="true"></div>
       <div class="truth" id="heroTruth" aria-hidden="true"></div>
       <button class="replay mono" id="replay" type="button" aria-label="Replay the animation"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v2.8h2.8"/></svg>Replay</button>
@@ -64,7 +64,8 @@
         <button class="btn sm wide" id="showCompare"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h3V7H2zM6.5 13h3V3h-3zM11 13h3V9h-3z"/></svg>Compare all</button>
         <button class="btn sm wide ghost" id="addLetter">+ Add an offer</button>
       </aside>
-      <div class="panel" id="panel" aria-live="polite"></div>
+      <div class="panel" id="panel"></div>
+      <p class="sr-only" id="announce" role="status"></p>
     </div>
 
     <div class="intake" id="paste">
@@ -201,13 +202,13 @@
   <div class="split" data-slot="split"></div>
   <div class="kpis" data-slot="kpis"></div>
   <div class="tabs" role="tablist" aria-label="Details">
-    <button role="tab" data-tab="flags">What this letter does <span class="n" data-slot="nflags"></span></button>
-    <button role="tab" data-tab="years">Four years</button>
-    <button role="tab" data-tab="lines">Every line</button>
-    <button role="tab" data-tab="email">Ask the aid office</button>
+    <button role="tab" id="tab-flags" aria-controls="tabpanel" data-tab="flags">What this letter does <span class="n" data-slot="nflags"></span></button>
+    <button role="tab" id="tab-years" aria-controls="tabpanel" data-tab="years">Four years</button>
+    <button role="tab" id="tab-lines" aria-controls="tabpanel" data-tab="lines">Every line</button>
+    <button role="tab" id="tab-email" aria-controls="tabpanel" data-tab="email">Ask the aid office</button>
     <span class="tab-ink" aria-hidden="true"></span>
   </div>
-  <div class="tabpanel" role="tabpanel" data-slot="tab"></div>
+  <div class="tabpanel" id="tabpanel" role="tabpanel" data-slot="tab"></div>
 </template>
 
 <script type="module" src="js/app.js"></script>

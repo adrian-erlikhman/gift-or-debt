@@ -300,6 +300,7 @@ function renderTab(letter, r, flags, animate) {
   const tabs = $$('.tabs [role=tab]', panel);
   tabs.forEach((t) => { const on = t.dataset.tab === state.tab; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
   const box = $('[data-slot=tab]', panel);
+  box.setAttribute('aria-labelledby', `tab-${state.tab}`);
   box.classList.remove('anim');
   if (animate) { void box.offsetWidth; box.classList.add('anim'); }
   const T = { flags: tabFlags, years: tabYears, lines: tabLines, email: tabEmail }[state.tab];
@@ -449,13 +450,47 @@ function render({ animate } = {}) {
   lastShown = key;
   if (state.current === 'compare' && state.letters.length >= 2) renderCompare(anim);
   else if (state.letters.length) renderLetter(Math.min(state.current ?? 0, state.letters.length - 1), anim);
-  if ($('#drawer').hidden === false) $('#assumptions').innerHTML = assumptionsForm();
+  announce();
   const p = new URLSearchParams(location.search);
   if (state.current === 'compare') p.set('view', 'compare'); else p.delete('view');
   history.replaceState(null, '', `${location.pathname}${p.toString() ? '?' + p : ''}${location.hash}`);
 }
 function show(fn) {
   if (document.startViewTransition && !reduced) document.startViewTransition(fn); else fn();
+}
+
+// Screen readers hear the verdict when an offer opens or its numbers change,
+// not the whole panel.
+function announce() {
+  const v = $('#panel .verdict');
+  const msg = state.letters.length ? `${$('#panel .school, #panel .cmp h2')?.textContent || ''}. ${v ? v.textContent : ''}` : '';
+  if ($('#announce').textContent !== msg) $('#announce').textContent = msg;
+}
+
+// Editing a line re-renders the panel; keyboard focus goes back to the same
+// control instead of falling to the top of the page.
+function focusKey(el) {
+  if (!el || !$('#panel').contains(el)) return null;
+  for (const a of ['j', 'tab', 'act', 'goto']) if (el.dataset[a] !== undefined) return `${el.tagName.toLowerCase()}[data-${a}="${el.dataset[a]}"]`;
+  if (el.name && el.closest('.addline')) return `.addline [name="${el.name}"]`;
+  return null;
+}
+function rerender() {
+  const k = focusKey(document.activeElement);
+  render({ animate: false });
+  if (k) $(k, $('#panel'))?.focus({ preventScroll: true });
+}
+
+let drawerFrom = null;
+function openDrawer(from) {
+  drawerFrom = from;
+  $('#assumptions').innerHTML = assumptionsForm();
+  $('#drawer').hidden = false;
+  $('#assumptions input')?.focus();
+}
+function closeDrawer() {
+  $('#drawer').hidden = true;
+  (drawerFrom?.isConnected ? drawerFrom : $('#panel [data-act=assumptions]'))?.focus({ preventScroll: true });
 }
 
 function assumptionsForm() {
@@ -475,7 +510,7 @@ function assumptionsForm() {
 // ---------- events ----------
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('button');
-  if (!b) { if (e.target === $('#drawer')) $('#drawer').hidden = true; return; }
+  if (!b) { if (e.target === $('#drawer')) closeDrawer(); return; }
   if (b.dataset.i !== undefined) { state.current = +b.dataset.i; show(() => render()); return; }
   if (b.dataset.demo !== undefined) return loadDemo(0, true);
   if (b.dataset.sample !== undefined) return loadDemo(+b.dataset.sample, true);
@@ -490,10 +525,15 @@ document.addEventListener('click', async (e) => {
   if (b.id === 'showCompare') { state.current = 'compare'; show(() => render()); $('#work').scrollIntoView({ behavior: 'smooth' }); return; }
   if (b.id === 'addLetter') { $('#paste').scrollIntoView({ behavior: 'smooth' }); $('#letterText').focus({ preventScroll: true }); return; }
   const act = b.dataset.act;
-  if (act === 'assumptions') { $('#assumptions').innerHTML = assumptionsForm(); $('#drawer').hidden = false; $('#assumptions input')?.focus(); }
-  if (act === 'close-drawer') $('#drawer').hidden = true;
+  if (act === 'assumptions') openDrawer(b);
+  if (act === 'close-drawer') closeDrawer();
   if (act === 'print') window.print();
-  if (act === 'remove') { state.letters.splice(state.current, 1); state.current = state.letters.length ? 0 : null; render({ animate: true }); }
+  if (act === 'remove') {
+    state.letters.splice(state.current, 1);
+    state.current = state.letters.length ? 0 : null;
+    render({ animate: true });
+    (state.letters.length ? $('#letterList button') : $('#letterText'))?.focus({ preventScroll: !state.letters.length });
+  }
   if (act === 'copy') { const ta = $('.mail textarea'); ta.select(); try { await navigator.clipboard.writeText(ta.value); } catch { document.execCommand('copy'); } b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy email'), 1600); }
   if (act === 'polish') {
     const st = $('[data-slot=emailStatus]');
@@ -504,12 +544,22 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !$('#drawer').hidden) $('#drawer').hidden = true;
+  const open = !$('#drawer').hidden;
+  if (e.key === 'Escape' && open) return closeDrawer();
+  if (e.key === 'Tab' && open) { // keep focus inside the open drawer
+    const f = $$('#drawer button, #drawer input');
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+    return;
+  }
   const t = e.target;
-  if (t.matches?.('.tabs [role=tab]') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+  const keys = { ArrowRight: 1, ArrowLeft: -1, Home: 'first', End: 'last' };
+  if (t.matches?.('.tabs [role=tab]') && e.key in keys) {
+    e.preventDefault();
     const tabs = $$('.tabs [role=tab]');
-    const i = tabs.indexOf(t) + (e.key === 'ArrowRight' ? 1 : -1);
-    const n = tabs[(i + tabs.length) % tabs.length];
+    const k = keys[e.key];
+    const n = k === 'first' ? tabs[0] : k === 'last' ? tabs[tabs.length - 1] : tabs[(tabs.indexOf(t) + k + tabs.length) % tabs.length];
     n.click(); $(`.tabs [data-tab="${n.dataset.tab}"]`).focus();
   }
 });
@@ -535,13 +585,14 @@ document.addEventListener('submit', (e) => {
 
 document.addEventListener('change', (e) => {
   const t = e.target;
+  // Re-render after focus has moved (a Tab out of a field), so it can be restored.
   if (t.matches('.ln select')) {
     setCategory(state.letters[state.current].lines[+t.dataset.j], t.value);
-    render({ animate: false });
+    setTimeout(rerender);
   }
   if (t.matches('.ln input')) {
     state.letters[state.current].lines[+t.dataset.j].annual = Math.max(0, Number(t.value) || 0);
-    render({ animate: false });
+    setTimeout(rerender);
   }
   if (t.dataset.opt) {
     const v = Number(t.value) / 100;

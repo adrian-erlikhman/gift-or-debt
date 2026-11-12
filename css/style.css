@@ -11,7 +11,7 @@
   --surface: #ffffff;
   --ink: #0d0f0c;
   --ink-2: #3d413b;
-  --muted: #777b74;
+  --muted: #686c65; /* 4.5:1 or better on the canvas, the panels and white */
   --line: #e4e4de;
   --line-2: #d4d4cc;
   --gift: #12a150;
@@ -211,6 +211,7 @@ html:not(.js) .circled path { stroke-dashoffset: 0; }
 .drop-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
 .file-btn { position: relative; overflow: hidden; flex-shrink: 0; }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-btn:has(input:focus-visible) { outline: 2.5px solid var(--focus); outline-offset: 2px; }
 .field { display: grid; gap: 6px; font-weight: 560; font-size: 14px; }
 .field input, .field textarea, .field select { width: 100%; font-weight: 400; font-size: 15px; padding: 11px 13px; border: 1px solid var(--line-2); border-radius: 12px; background: #fff; transition: border-color .2s, box-shadow .2s; }
 .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 4px rgba(13, 15, 12, .07); }
