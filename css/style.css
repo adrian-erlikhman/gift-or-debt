@@ -187,7 +187,9 @@ html:not(.js) .circled path { stroke-dashoffset: 0; }
 .tr-rows .gift .v { color: var(--gift-ink); }
 .tr-rows .debt .v { color: var(--debt-ink); }
 .tr-rows .work .v { color: var(--work-ink); }
-.tr-four { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.tr-four { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.tr-four > div { display: flex; flex-direction: column; }
+.tr-four > div > .v { margin-top: auto; }
 .tr-four div { background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 14px; opacity: 0; transform: translateY(8px); transition: opacity .45s, transform .55s var(--ease); }
 .tr-four div:nth-child(2) { transition-delay: .12s; }
 .tr-four.on div { opacity: 1; transform: none; }
@@ -516,6 +518,9 @@ tr.total td { color: var(--muted); }
   .lt-row.total::after { right: 6px; }
   .pen-note { display: none; }
   .tr-big { font-size: 36px; }
+  .truth { padding: 20px 16px 18px; }
+  .tr-four div { padding: 11px 12px; }
+  .tr-four .v { font-size: 20px; }
   .kpis { grid-template-columns: 1fr 1fr; }
   .field.inline input { width: 100%; }
   .drop-top { flex-direction: column; }
